@@ -433,7 +433,7 @@ static bool rz_cmd_java_handle_summary_info(RzCore *core, const char *cmd) {
 }
 
 static int _(rz_cmd_java_check_op_idx)(const ut8 *op_bytes, ut16 idx) {
-	return RZ_BIN_JAVA_USHORT(op_bytes, 0) == idx;
+	return raw_to_ushort(op_bytes, 0) == idx;
 }
 
 /* Find stuff in the constant pool */
@@ -844,7 +844,7 @@ static bool rz_cmd_java_handle_replace_classname_value(RzCore *core, const char 
 			if (!buffer) {
 				continue;
 			}
-			len = RZ_BIN_JAVA_USHORT(buffer, 1);
+			len = raw_to_ushort(buffer, 1);
 			name = malloc(len + 3);
 			memcpy(name, buffer + 3, len);
 			name[len] = 0;
@@ -970,9 +970,9 @@ static bool rz_cmd_java_handle_find_cp_const(RzCore *core, const char *cmd) {
 				break;
 			case 0x13:
 			case 0x14:
-				cp_res = (idx == (ut16)-1) || (RZ_BIN_JAVA_USHORT(bb->op_bytes, 1) == idx) ? RZ_NEW0(RzCmdJavaCPResult) : NULL;
+				cp_res = (idx == (ut16)-1) || (raw_to_ushort(bb->op_bytes, 1) == idx) ? RZ_NEW0(RzCmdJavaCPResult) : NULL;
 				if (cp_res) {
-					cp_res->idx = RZ_BIN_JAVA_USHORT(bb->op_bytes, 1);
+					cp_res->idx = raw_to_ushort(bb->op_bytes, 1);
 				}
 				break;
 			}
@@ -1331,7 +1331,7 @@ static bool rz_cmd_java_handle_flags_str_at(RzCore *core, const char *cmd) {
 		if (cur_offset != core->offset) {
 			rz_core_seek(core, cur_offset - 2, true);
 		}
-		flag_value = RZ_BIN_JAVA_USHORT(((ut8 *)&flag_value), 0);
+		flag_value = raw_to_ushort(((ut8 *)&flag_value), 0);
 	}
 
 	if (p && f_type) {
@@ -1699,7 +1699,7 @@ static int rz_cmd_java_set_acc_flags(RzCore *core, ut64 addr, ut16 num_acc_flag)
 	char cmd_buf[50];
 
 	bool res = false;
-	num_acc_flag = RZ_BIN_JAVA_USHORT(((ut8 *)&num_acc_flag), 0);
+	num_acc_flag = raw_to_ushort(((ut8 *)&num_acc_flag), 0);
 	res = rz_core_write_at(core, addr, (const ut8 *)&num_acc_flag, 2);
 	if (!res) {
 		eprintf("[X] rz_cmd_java_set_acc_flags: Failed to write.\n");

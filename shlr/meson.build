@@ -93,6 +93,8 @@ java_files = [
   'java/code.c',
   'java/ops.c',
   'java/json.c',
+  'java/print.c',
+  'java/conversion.c',
 ]
 
 java_inc = [platform_inc, include_directories('java')]

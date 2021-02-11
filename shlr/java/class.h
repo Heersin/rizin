@@ -8,38 +8,14 @@
 #include <rz_bin.h>
 #include <sdb.h>
 #include <rz_util.h>
+#include "conversion.h"
 
 #if defined(_MSC_VER) && !defined(RZ_API_BIN_ONLY)
 #undef RZ_API
 #define RZ_API
 #endif
 
-#define USHORT(x, y) ((ut16)(x[y + 1] | (x[y] << 8)))
-#if 1
-#define UINT(x, y) (ut32)(((x[y] & 0xff) << 24) | ((x[y + 1] & 0xff) << 16) | ((x[y + 2] & 0xff) << 8) | (x[y + 3] & 0xff))
-#else
-static inline ut32 UINT(const ut8 *x, const int y) {
-	ut32 ret = 0;
-	ret = (x[y] & 0xff) << 24;
-	ret |= (x[y + 1] & 0xff) << 16;
-	ret |= (x[y + 2] & 0xff) << 8;
-	ret |= (x[y + 3] & 0xff);
-	return ret;
-}
-#endif
-
 #define RZ_BIN_JAVA_MAXSTR 256
-
-#define RZ_BIN_JAVA_USHORT(x, y) ((ut16)(((0xff & x[y + 1]) | ((x[y] & 0xff) << 8)) & 0xffff))
-
-#define RZ_BIN_JAVA_UINT(x, y)  ((ut32)(((x[y] & 0xff) << 24) | ((x[y + 1] & 0xff) << 16) | ((x[y + 2] & 0xff) << 8) | (x[y + 3] & 0xff)))
-#define RZ_BIN_JAVA_FLOAT(x, y) ((float)RZ_BIN_JAVA_UINT(x, y))
-
-#define RZ_BIN_JAVA_LONG(x, y) (((ut64)RZ_BIN_JAVA_UINT(x, y) << 32) | ((ut64)RZ_BIN_JAVA_UINT(x, y + 4) & 0xffffffff))
-//#define RZ_BIN_JAVA_DOUBLE(x,y) ((double)RBIN_JAVA_LONG(x,y))
-//#define RZ_BIN_JAVA_SWAPUSHORT(x) ((ut16)((x<<8)|((x>>8)&0x00FF)))
-
-#define RZ_BIN_JAVA_DOUBLE(x, y) rbin_java_raw_to_double(x, y)
 
 typedef enum {
 	RZ_BIN_JAVA_METHOD_ACC_PUBLIC = 0x0001,
