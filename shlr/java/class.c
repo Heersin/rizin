@@ -22,15 +22,15 @@ static PrintfCallback Eprintf = (PrintfCallback)printf;
 
 #define MAX_CPITEMS 8192
 
-RZ_API char *U(rz_bin_java_unmangle_method)(const char *flags, const char *name, const char *params, const char *rz_value);
+RZ_API char *rz_bin_java_unmangle_method(const char *flags, const char *name, const char *params, const char *rz_value);
 RZ_API int rz_bin_java_is_fm_type_private(RzBinJavaField *fm_type);
 RZ_API int rz_bin_java_is_fm_type_protected(RzBinJavaField *fm_type);
-RZ_API ut32 U(rz_bin_java_swap_uint)(ut32 x);
+RZ_API ut32 rz_bin_java_swap_uint(ut32 x);
 
 // RZ_API const char * rz_bin_java_get_this_class_name(RzBinJavaObj *bin);
-RZ_API void U(add_cp_objs_to_sdb)(RzBinJavaObj *bin);
-RZ_API void U(add_field_infos_to_sdb)(RzBinJavaObj *bin);
-RZ_API void U(add_method_infos_to_sdb)(RzBinJavaObj *bin);
+RZ_API void add_cp_objs_to_sdb(RzBinJavaObj *bin);
+RZ_API void add_field_infos_to_sdb(RzBinJavaObj *bin);
+RZ_API void add_method_infos_to_sdb(RzBinJavaObj *bin);
 RZ_API RzList *retrieve_all_access_string_and_value(RzBinJavaAccessFlags *access_flags);
 RZ_API char *retrieve_access_string(ut16 flags, RzBinJavaAccessFlags *access_flags);
 RZ_API ut16 calculate_access_value(const char *access_flags_str, RzBinJavaAccessFlags *access_flags);
@@ -105,10 +105,10 @@ RZ_API void rz_bin_java_print_stack_map_table_attr_summary(RzBinJavaAttrInfo *ob
 RZ_API void rz_bin_java_print_stack_map_frame_summary(RzBinJavaStackMapFrame *obj);
 RZ_API void rz_bin_java_print_verification_info_summary(RzBinJavaVerificationObj *obj);
 RZ_API RzBinJavaStackMapFrame *rz_bin_java_build_stack_frame_from_local_variable_table(RzBinJavaObj *bin, RzBinJavaAttrInfo *attr);
-RZ_API void U(rz_bin_java_print_stack_map_append_frame_summary)(RzBinJavaStackMapFrame *obj);
-RZ_API void U(rz_bin_java_stack_frame_default_free)(void /*RzBinJavaStackMapFrame*/ *stack_frame);
-RZ_API void U(rz_bin_java_stack_frame_do_nothing_free)(void /*RzBinJavaStackMapFrame*/ *stack_frame);
-RZ_API void U(rz_bin_java_stack_frame_do_nothing_new)(RzBinJavaObj *bin, RzBinJavaStackMapFrame *stack_frame, ut64 offset);
+RZ_API void rz_bin_java_print_stack_map_append_frame_summary(RzBinJavaStackMapFrame *obj);
+RZ_API void rz_bin_java_stack_frame_default_free(void /*RzBinJavaStackMapFrame*/ *stack_frame);
+RZ_API void rz_bin_java_stack_frame_do_nothing_free(void /*RzBinJavaStackMapFrame*/ *stack_frame);
+RZ_API void rz_bin_java_stack_frame_do_nothing_new(RzBinJavaObj *bin, RzBinJavaStackMapFrame *stack_frame, ut64 offset);
 RZ_API RzBinJavaStackMapFrame *rz_bin_java_stack_map_frame_new(ut8 *buffer, ut64 sz, RzBinJavaStackMapFrame *p_frame, ut64 buf_offset);
 // RZ_API RzBinJavaStackMapFrame* rz_bin_java_stack_map_frame_new (ut8* buffer, ut64 sz, ut64 buf_offset);
 RZ_API RzBinJavaElementValue *rz_bin_java_element_value_new(ut8 *buffer, ut64 sz, ut64 buf_offset);
@@ -120,7 +120,7 @@ RZ_API RzBinJavaElementValue *rz_bin_java_element_value_new(ut8 *buffer, ut64 sz
 RZ_API RzBinJavaBootStrapMethod *rz_bin_java_bootstrap_method_new(ut8 *buffer, ut64 sz, ut64 buf_offset);
 RZ_API RzBinJavaAnnotationsArray *rz_bin_java_annotation_array_new(ut8 *buffer, ut64 sz, ut64 buf_offset);
 RZ_API RzBinJavaElementValueMetas *rz_bin_java_get_ev_meta_from_tag(ut8 tag);
-RZ_API RzBinJavaCPTypeMetas *U(rz_bin_java_get_cp_meta_from_tag)(ut8 tag);
+RZ_API RzBinJavaCPTypeMetas *rz_bin_java_get_cp_meta_from_tag(ut8 tag);
 RZ_API void rz_bin_java_inner_classes_attr_entry_free(void /*RzBinJavaClassesAttribute*/ *attr);
 RZ_API void rz_bin_java_annotation_default_attr_free(void /*RzBinJavaAttrInfo*/ *attr);
 RZ_API void rz_bin_java_enclosing_methods_attr_free(void /*RzBinJavaAttrInfo*/ *attr);
@@ -256,10 +256,10 @@ RZ_API RzList *rz_bin_java_find_cp_const_by_val_int(RzBinJavaObj *bin_obj, const
 RZ_API RzList *rz_bin_java_find_cp_const_by_val_long(RzBinJavaObj *bin_obj, const ut8 *bytes, ut32 len);
 RZ_API RzList *rz_bin_java_find_cp_const_by_val_utf8(RzBinJavaObj *bin_obj, const ut8 *bytes, ut32 len);
 RZ_API ut8 *rz_bin_java_cp_append_classref_and_name(RzBinJavaObj *bin, ut32 *out_sz, const char *classname, const ut32 classname_len);
-RZ_API ut8 *U(rz_bin_java_cp_append_ref_cname_fname_ftype)(RzBinJavaObj *bin, ut32 *out_sz, ut8 tag, const char *cname, const ut32 c_len, const char *fname, const ut32 f_len, const char *tname, const ut32 t_len);
+RZ_API ut8 *rz_bin_java_cp_append_ref_cname_fname_ftype(RzBinJavaObj *bin, ut32 *out_sz, ut8 tag, const char *cname, const ut32 c_len, const char *fname, const ut32 f_len, const char *tname, const ut32 t_len);
 RZ_API ut8 *rz_bin_java_cp_get_classref(RzBinJavaObj *bin, ut32 *out_sz, const char *classname, const ut32 classname_len, const ut16 name_idx);
-RZ_API ut8 *U(rz_bin_java_cp_get_method_ref)(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx);
-RZ_API ut8 *U(rz_bin_java_cp_get_field_ref)(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx);
+RZ_API ut8 *rz_bin_java_cp_get_method_ref(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx);
+RZ_API ut8 *rz_bin_java_cp_get_field_ref(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx);
 RZ_API ut8 *rz_bin_java_cp_get_fm_ref(RzBinJavaObj *bin, ut32 *out_sz, ut8 tag, ut16 class_idx, ut16 name_and_type_idx);
 RZ_API ut8 *rz_bin_java_cp_get_2_ut16(RzBinJavaObj *bin, ut32 *out_sz, ut8 tag, ut16 ut16_one, ut16 ut16_two);
 RZ_API ut8 *rz_bin_java_cp_get_name_type(RzBinJavaObj *bin, ut32 *out_sz, ut16 name_idx, ut16 type_idx);
@@ -280,7 +280,7 @@ static char *convert_string(const char *bytes, ut32 len) {
 
 // taken from LLVM Code Byte Swap
 // TODO: move into rz_util
-RZ_API ut32 U(rz_bin_java_swap_uint)(ut32 x) {
+RZ_API ut32 rz_bin_java_swap_uint(ut32 x) {
 	const ut32 Byte0 = x & 0x000000FF;
 	const ut32 Byte1 = x & 0x0000FF00;
 	const ut32 Byte2 = x & 0x00FF0000;
@@ -2903,7 +2903,7 @@ RZ_API RzBinSymbol *rz_bin_java_create_new_symbol_from_cp_idx(ut32 cp_idx, ut64 
 	return sym;
 }
 
-RZ_API RzList *U(rz_bin_java_get_fields)(RzBinJavaObj *bin) {
+RZ_API RzList *rz_bin_java_get_fields(RzBinJavaObj *bin) {
 	RzListIter *iter = NULL, *iter_tmp = NULL;
 	RzList *fields = rz_list_new();
 	RzBinJavaField *fm_type;
@@ -7730,7 +7730,7 @@ RZ_API RzList *rz_bin_java_find_cp_const_by_val(RzBinJavaObj *bin_obj, const ut8
 // Attempted to clean up these functions and remove them since they are "unused" but without
 // them there are some compile time warnings, because other projects actually depend on these
 // for some form of information.
-RZ_API void U(add_cp_objs_to_sdb)(RzBinJavaObj *bin) {
+RZ_API void add_cp_objs_to_sdb(RzBinJavaObj *bin) {
 	/*
 	Add Constant Pool Serialized Object to an Array
 	the key for this info is:
@@ -7790,7 +7790,7 @@ RZ_API void U(add_cp_objs_to_sdb)(RzBinJavaObj *bin) {
 	free(key);
 }
 
-RZ_API void U(add_field_infos_to_sdb)(RzBinJavaObj *bin) {
+RZ_API void add_field_infos_to_sdb(RzBinJavaObj *bin) {
 	/*
 	*** Experimental and May Change ***
 	Add field information to an Array
@@ -7866,7 +7866,7 @@ RZ_API void U(add_field_infos_to_sdb)(RzBinJavaObj *bin) {
 	}
 }
 
-RZ_API void U(add_method_infos_to_sdb)(RzBinJavaObj *bin) {
+RZ_API void add_method_infos_to_sdb(RzBinJavaObj *bin) {
 	/*
 	*** Experimental and May Change ***
 	Add Mehtod information to an Array
@@ -7960,31 +7960,31 @@ RZ_API void U(add_method_infos_to_sdb)(RzBinJavaObj *bin) {
 	}
 }
 
-RZ_API RzList *U(rz_bin_java_get_args_from_bin)(RzBinJavaObj *bin_obj, ut64 addr) {
+RZ_API RzList *rz_bin_java_get_args_from_bin(RzBinJavaObj *bin_obj, ut64 addr) {
 	RzBinJavaField *fm_type = rz_bin_java_get_method_code_attribute_with_addr(bin_obj, addr);
 	return fm_type ? rz_bin_java_get_args(fm_type) : NULL;
 }
 
-RZ_API RzList *U(rz_bin_java_get_ret_from_bin)(RzBinJavaObj *bin_obj, ut64 addr) {
+RZ_API RzList *rz_bin_java_get_ret_from_bin(RzBinJavaObj *bin_obj, ut64 addr) {
 	RzBinJavaField *fm_type = rz_bin_java_get_method_code_attribute_with_addr(bin_obj, addr);
 	return fm_type ? rz_bin_java_get_ret(fm_type) : NULL;
 }
 
-RZ_API char *U(rz_bin_java_get_fcn_name_from_bin)(RzBinJavaObj *bin_obj, ut64 addr) {
+RZ_API char *rz_bin_java_get_fcn_name_from_bin(RzBinJavaObj *bin_obj, ut64 addr) {
 	RzBinJavaField *fm_type = rz_bin_java_get_method_code_attribute_with_addr(bin_obj, addr);
 	return fm_type && fm_type->name ? strdup(fm_type->name) : NULL;
 }
 
-RZ_API int U(rz_bin_java_is_method_static)(RzBinJavaObj *bin_obj, ut64 addr) {
+RZ_API int rz_bin_java_is_method_static(RzBinJavaObj *bin_obj, ut64 addr) {
 	RzBinJavaField *fm_type = rz_bin_java_get_method_code_attribute_with_addr(bin_obj, addr);
 	return fm_type && fm_type->flags & RZ_BIN_JAVA_METHOD_ACC_STATIC;
 }
 
-RZ_API int U(rz_bin_java_is_method_private)(RzBinJavaObj *bin_obj, ut64 addr) {
+RZ_API int rz_bin_java_is_method_private(RzBinJavaObj *bin_obj, ut64 addr) {
 	return rz_bin_java_is_fm_type_private(rz_bin_java_get_method_code_attribute_with_addr(bin_obj, addr));
 }
 
-RZ_API int U(rz_bin_java_is_method_protected)(RzBinJavaObj *bin_obj, ut64 addr) {
+RZ_API int rz_bin_java_is_method_protected(RzBinJavaObj *bin_obj, ut64 addr) {
 	return rz_bin_java_is_fm_type_protected(
 		rz_bin_java_get_method_code_attribute_with_addr(bin_obj, addr));
 }
@@ -8486,7 +8486,7 @@ RZ_API int rz_bin_java_resolve_cp_idx_print_summary(RzBinJavaObj *BIN_OBJ, int i
 	return item ? true : false;
 }
 
-RZ_API ConstJavaValue *U(rz_bin_java_resolve_to_const_value)(RzBinJavaObj *BIN_OBJ, int idx) {
+RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *BIN_OBJ, int idx) {
 	// TODO XXX FIXME add a size parameter to the str when it is passed in
 	RzBinJavaCPTypeObj *item = NULL, *item2 = NULL;
 	ConstJavaValue *result = RZ_NEW0(ConstJavaValue);
@@ -8634,7 +8634,7 @@ RZ_API ConstJavaValue *U(rz_bin_java_resolve_to_const_value)(RzBinJavaObj *BIN_O
 	return result;
 }
 
-RZ_API void U(rz_bin_java_free_const_value)(ConstJavaValue *cp_value) {
+RZ_API void rz_bin_java_free_const_value(ConstJavaValue *cp_value) {
 	char first_char = cp_value && cp_value->type ? *cp_value->type : 0,
 	     second_char = cp_value && cp_value->type ? *(cp_value->type + 1) : 0;
 	switch (first_char) {
@@ -8754,7 +8754,7 @@ RZ_API char rz_bin_java_resolve_cp_idx_tag(RzBinJavaObj *BIN_OBJ, int idx) {
 	return RZ_BIN_JAVA_CP_UNKNOWN;
 }
 
-RZ_API int U(rz_bin_java_integer_cp_set)(RzBinJavaObj *bin, ut16 idx, ut32 val) {
+RZ_API int rz_bin_java_integer_cp_set(RzBinJavaObj *bin, ut16 idx, ut32 val) {
 	RzBinJavaCPTypeObj *cp_obj = rz_bin_java_get_item_from_bin_cp_list(bin, idx);
 	if (!cp_obj) {
 		return false;
@@ -8774,7 +8774,7 @@ RZ_API int U(rz_bin_java_integer_cp_set)(RzBinJavaObj *bin, ut16 idx, ut32 val) 
 	return true;
 }
 
-RZ_API int U(rz_bin_java_float_cp_set)(RzBinJavaObj *bin, ut16 idx, float val) {
+RZ_API int rz_bin_java_float_cp_set(RzBinJavaObj *bin, ut16 idx, float val) {
 	RzBinJavaCPTypeObj *cp_obj = rz_bin_java_get_item_from_bin_cp_list(bin, idx);
 	if (!cp_obj) {
 		return false;
@@ -8795,7 +8795,7 @@ RZ_API int U(rz_bin_java_float_cp_set)(RzBinJavaObj *bin, ut16 idx, float val) {
 	return true;
 }
 
-RZ_API int U(rz_bin_java_long_cp_set)(RzBinJavaObj *bin, ut16 idx, ut64 val) {
+RZ_API int rz_bin_java_long_cp_set(RzBinJavaObj *bin, ut16 idx, ut64 val) {
 	RzBinJavaCPTypeObj *cp_obj = rz_bin_java_get_item_from_bin_cp_list(bin, idx);
 	if (!cp_obj) {
 		return false;
@@ -8815,7 +8815,7 @@ RZ_API int U(rz_bin_java_long_cp_set)(RzBinJavaObj *bin, ut16 idx, ut64 val) {
 	return true;
 }
 
-RZ_API int U(rz_bin_java_double_cp_set)(RzBinJavaObj *bin, ut16 idx, ut32 val) {
+RZ_API int rz_bin_java_double_cp_set(RzBinJavaObj *bin, ut16 idx, ut32 val) {
 	RzBinJavaCPTypeObj *cp_obj = rz_bin_java_get_item_from_bin_cp_list(bin, idx);
 	if (!cp_obj) {
 		return false;
@@ -8836,7 +8836,7 @@ RZ_API int U(rz_bin_java_double_cp_set)(RzBinJavaObj *bin, ut16 idx, ut32 val) {
 	return true;
 }
 
-RZ_API int U(rz_bin_java_utf8_cp_set)(RzBinJavaObj *bin, ut16 idx, const ut8 *buffer, ut32 len) {
+RZ_API int rz_bin_java_utf8_cp_set(RzBinJavaObj *bin, ut16 idx, const ut8 *buffer, ut32 len) {
 	RzBinJavaCPTypeObj *cp_obj = rz_bin_java_get_item_from_bin_cp_list(bin, idx);
 	if (!cp_obj) {
 		return false;
@@ -8904,11 +8904,11 @@ RZ_API ut64 rz_bin_java_get_method_end(RzBinJavaObj *bin, RzBinJavaField *fm_typ
 		+rz_bin_java_get_method_code_size(fm_type);
 }
 
-RZ_API ut8 *U(rz_bin_java_cp_append_method_ref)(RzBinJavaObj *bin, ut32 *out_sz, ut16 cn_idx, ut16 fn_idx, ut16 ft_idx) {
+RZ_API ut8 *rz_bin_java_cp_append_method_ref(RzBinJavaObj *bin, ut32 *out_sz, ut16 cn_idx, ut16 fn_idx, ut16 ft_idx) {
 	return rz_bin_java_cp_get_fref_bytes(bin, out_sz, RZ_BIN_JAVA_CP_METHODREF, cn_idx, fn_idx, ft_idx);
 }
 
-RZ_API ut8 *U(rz_bin_java_cp_append_field_ref)(RzBinJavaObj *bin, ut32 *out_sz, ut16 cn_idx, ut16 fn_idx, ut16 ft_idx) {
+RZ_API ut8 *rz_bin_java_cp_append_field_ref(RzBinJavaObj *bin, ut32 *out_sz, ut16 cn_idx, ut16 fn_idx, ut16 ft_idx) {
 	return rz_bin_java_cp_get_fref_bytes(bin, out_sz, RZ_BIN_JAVA_CP_FIELDREF, cn_idx, fn_idx, ft_idx);
 }
 
@@ -8916,7 +8916,7 @@ RZ_API char *rz_bin_java_unmangle_without_flags(const char *name, const char *de
 	return rz_bin_java_unmangle(NULL, name, descriptor);
 }
 
-RZ_API void U(rz_bin_java_print_stack_map_append_frame_summary)(RzBinJavaStackMapFrame *obj) {
+RZ_API void rz_bin_java_print_stack_map_append_frame_summary(RzBinJavaStackMapFrame *obj) {
 	RzListIter *iter, *iter_tmp;
 	RzList *ptrList;
 	RzBinJavaVerificationObj *ver_obj;
@@ -8937,16 +8937,16 @@ RZ_API void U(rz_bin_java_print_stack_map_append_frame_summary)(RzBinJavaStackMa
 	}
 }
 
-RZ_API void U(rz_bin_java_stack_frame_default_free)(void *s) {
+RZ_API void rz_bin_java_stack_frame_default_free(void *s) {
 	RzBinJavaStackMapFrame *stack_frame = s;
 	if (stack_frame) {
 		free(stack_frame->metas);
 		free(stack_frame);
 	}
 }
-RZ_API void U(rz_bin_java_stack_frame_do_nothing_free)(void /*RzBinJavaStackMapFrame*/ *stack_frame) {}
-RZ_API void U(rz_bin_java_stack_frame_do_nothing_new)(RzBinJavaObj *bin, RzBinJavaStackMapFrame *stack_frame, ut64 offset) {}
-RZ_API RzBinJavaCPTypeMetas *U(rz_bin_java_get_cp_meta_from_tag)(ut8 tag) {
+RZ_API void rz_bin_java_stack_frame_do_nothing_free(void /*RzBinJavaStackMapFrame*/ *stack_frame) {}
+RZ_API void rz_bin_java_stack_frame_do_nothing_new(RzBinJavaObj *bin, RzBinJavaStackMapFrame *stack_frame, ut64 offset) {}
+RZ_API RzBinJavaCPTypeMetas *rz_bin_java_get_cp_meta_from_tag(ut8 tag) {
 	ut16 i = 0;
 	// set default to unknown.
 	RzBinJavaCPTypeMetas *res = &RZ_BIN_JAVA_CP_METAS[2];
@@ -8959,7 +8959,7 @@ RZ_API RzBinJavaCPTypeMetas *U(rz_bin_java_get_cp_meta_from_tag)(ut8 tag) {
 	return res;
 }
 
-RZ_API ut8 *U(rz_bin_java_cp_append_ref_cname_fname_ftype)(RzBinJavaObj *bin, ut32 *out_sz, ut8 tag, const char *cname, const ut32 c_len, const char *fname, const ut32 f_len, const char *tname, const ut32 t_len) {
+RZ_API ut8 *rz_bin_java_cp_append_ref_cname_fname_ftype(RzBinJavaObj *bin, ut32 *out_sz, ut8 tag, const char *cname, const ut32 c_len, const char *fname, const ut32 f_len, const char *tname, const ut32 t_len) {
 	ut32 cn_len = 0, fn_len = 0, ft_len = 0, total_len;
 	ut16 cn_idx = 0, fn_idx = 0, ft_idx = 0;
 	ut8 *bytes = NULL, *cn_bytes = NULL, *fn_bytes = NULL, *ft_bytes = NULL, *cref_bytes = NULL, *fref_bytes = NULL, *fnt_bytes = NULL;
@@ -9035,14 +9035,14 @@ beach:
 	free(cref_bytes);
 	return bytes;
 }
-RZ_API ut8 *U(rz_bin_java_cp_get_method_ref)(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx) {
+RZ_API ut8 *rz_bin_java_cp_get_method_ref(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx) {
 	return rz_bin_java_cp_get_fm_ref(bin, out_sz, RZ_BIN_JAVA_CP_METHODREF, class_idx, name_and_type_idx);
 }
-RZ_API ut8 *U(rz_bin_java_cp_get_field_ref)(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx) {
+RZ_API ut8 *rz_bin_java_cp_get_field_ref(RzBinJavaObj *bin, ut32 *out_sz, ut16 class_idx, ut16 name_and_type_idx) {
 	return rz_bin_java_cp_get_fm_ref(bin, out_sz, RZ_BIN_JAVA_CP_FIELDREF, class_idx, name_and_type_idx);
 }
 
-RZ_API void U(deinit_java_type_null)(void) {
+RZ_API void deinit_java_type_null(void) {
 	free(RZ_BIN_JAVA_NULL_TYPE.metas);
 }
 
@@ -9054,7 +9054,7 @@ RZ_API RzBinJavaCPTypeObj *rz_bin_java_get_item_from_cp(RzBinJavaObj *bin, int i
 	return obj ? obj : &RZ_BIN_JAVA_NULL_TYPE;
 }
 
-RZ_API void U(copy_type_info_to_stack_frame_list)(RzList *type_list, RzList *sf_list) {
+RZ_API void copy_type_info_to_stack_frame_list(RzList *type_list, RzList *sf_list) {
 	RzListIter *iter, *iter_tmp;
 	RzBinJavaVerificationObj *ver_obj, *new_ver_obj;
 	if (!type_list || !sf_list) {
@@ -9074,7 +9074,7 @@ RZ_API void U(copy_type_info_to_stack_frame_list)(RzList *type_list, RzList *sf_
 	}
 }
 
-RZ_API void U(copy_type_info_to_stack_frame_list_up_to_idx)(RzList *type_list, RzList *sf_list, ut64 idx) {
+RZ_API void copy_type_info_to_stack_frame_list_up_to_idx(RzList *type_list, RzList *sf_list, ut64 idx) {
 	RzListIter *iter, *iter_tmp;
 	RzBinJavaVerificationObj *ver_obj, *new_ver_obj;
 	ut32 pos = 0;
@@ -9155,7 +9155,7 @@ RZ_API ut64 rz_bin_java_calc_class_size(ut8 *bytes, ut64 size) {
 	return bin_size;
 }
 
-RZ_API int U(rz_bin_java_get_cp_idx_with_name)(RzBinJavaObj *bin_obj, const char *name, ut32 len) {
+RZ_API int rz_bin_java_get_cp_idx_with_name(RzBinJavaObj *bin_obj, const char *name, ut32 len) {
 	RzListIter *iter;
 	RzBinJavaCPTypeObj *obj;
 	rz_list_foreach (bin_obj->cp_list, iter, obj) {
