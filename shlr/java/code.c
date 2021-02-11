@@ -271,11 +271,6 @@ RZ_API void rz_java_new_method(void) {
 	BYTES_CONSUMED = 0;
 }
 
-RZ_API void U(rz_java_set_obj)(RzBinJavaObj *obj) {
-	// eprintf ("SET CP (%p) %d\n", cp, n);
-	//BIN_OBJ = obj;
-}
-
 RZ_API int rz_java_disasm(RzBinJavaObj *obj, ut64 addr, const ut8 *bytes, int len, char *output, int outlen) {
 	//rz_cons_printf ("rz_java_disasm (allowed %d): 0x%02x, 0x%0x.\n", outlen, bytes[0], addr);
 	return java_print_opcode(obj, addr, bytes[0], bytes, len, output, outlen);
