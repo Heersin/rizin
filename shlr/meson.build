@@ -92,6 +92,7 @@ java_files = [
   'java/class.c',
   'java/code.c',
   'java/ops.c',
+  'java/json.c',
 ]
 
 java_inc = [platform_inc, include_directories('java')]

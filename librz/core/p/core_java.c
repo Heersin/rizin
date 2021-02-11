@@ -11,6 +11,7 @@
 #include "../../../shlr/java/ops.h"
 #include "../../../shlr/java/class.h"
 #include "../../../shlr/java/code.h"
+#include "../../../shlr/java/json.h"
 
 #define DO_THE_DBG 0
 #undef IFDBG
