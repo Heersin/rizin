@@ -4076,7 +4076,6 @@ RZ_API RzBinJavaStackMapFrame *rz_bin_java_stack_map_frame_new(ut8 *buffer, ut64
 		// 1. Calculate the max index we want to copy from the list of the
 		// previous frames locals
 		k = stack_frame->tag - 251;
-		i = 0;
 		// 2. Read the uoffset
 		stack_frame->offset_delta = rz_read_at_be16(buffer, offset);
 		offset += 2;
@@ -7389,7 +7388,7 @@ RZ_API int rz_bin_java_resolve_cp_idx_print_summary(RzBinJavaObj *BIN_OBJ, int i
 	return item ? true : false;
 }
 
-RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *BIN_OBJ, int idx) {
+RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *bin_obj, int idx) {
 	// TODO XXX FIXME add a size parameter to the str when it is passed in
 	RzBinJavaCPTypeObj *item = NULL, *item2 = NULL;
 	ConstJavaValue *result = RZ_NEW0(ConstJavaValue);
@@ -7403,11 +7402,11 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *BIN_OBJ,
 	     *empty = "",
 	     *cp_name = NULL;
 	result->type = "unknown";
-	if (BIN_OBJ && BIN_OBJ->cp_count < 1) {
-		// rz_bin_java_new_bin(BIN_OBJ);
+	if (bin_obj && bin_obj->cp_count < 1) {
+		// rz_bin_java_new_bin(bin_obj);
 		return result;
 	}
-	item = (RzBinJavaCPTypeObj *)rz_bin_java_get_item_from_bin_cp_list(BIN_OBJ, idx);
+	item = (RzBinJavaCPTypeObj *)rz_bin_java_get_item_from_bin_cp_list(bin_obj, idx);
 	if (!item) {
 		return result;
 	}
@@ -7494,11 +7493,26 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *BIN_OBJ,
 			free(string_str);
 		}
 	} else if (strcmp(cp_name, "Utf8") == 0) {
+		if (!item->info.cp_utf8.bytes) {
+			free(result);
+			return NULL;
+		}
 		result->type = "str";
 		result->value._str = RZ_NEW0(struct java_const_value_str_t);
-		result->value._str->str = malloc(item->info.cp_utf8.length);
-		result->value._str->len = item->info.cp_utf8.length;
-		memcpy(result->value._str->str, item->info.cp_utf8.bytes, item->info.cp_utf8.length);
+		if (result->value._str) {
+			result->value._str->str = malloc(item->info.cp_utf8.length);
+			if (result->value._str->str) {
+				result->value._str->len = item->info.cp_utf8.length;
+				memcpy(result->value._str->str, item->info.cp_utf8.bytes, item->info.cp_utf8.length);
+			} else {
+				free(result->value._str);
+				free(result);
+				return NULL;
+			}
+		} else {
+			free(result);
+			return NULL;
+		}
 	} else if (strcmp(cp_name, "Long") == 0) {
 		result->type = "long";
 		result->value._long = rz_read_at_be64(item->info.cp_long.bytes.raw, 0);
