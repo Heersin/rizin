@@ -1534,11 +1534,13 @@ static const RzCmdDescHelp cmd_info_help = {
 	.summary = "Get info about opened binary file",
 };
 
+static const char *cmd_java_subcmd_choices[] = { "help", "set_flags", "prototypes", "resolve_cp", "calc_flags", "flags_str_at", "flags_str", "m_info", "f_info", "find_cp_const", "find_cp_value", "replace_cp_value", "replace_classname_value", "reload_bin", "summary", "exc", "calc_sz", "is_valid", NULL };
 static const RzCmdDescArg cmd_java_args[] = {
 	{
 		.name = "subcmd",
-		.type = RZ_CMD_ARG_TYPE_STRING,
+		.type = RZ_CMD_ARG_TYPE_CHOICES,
 		.optional = false,
+		.choices = cmd_java_subcmd_choices,
 
 	},
 	{
