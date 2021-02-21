@@ -42,21 +42,10 @@ static void init_switch_op(void) {
 }
 
 static int enter_switch_op(ut64 addr, const ut8 *bytes, int len) {
-#if 0
-	int sz = ((BYTES_CONSUMED+1) % 4)
-		? (1 + 4 - (BYTES_CONSUMED+1) % 4)
-		: 1; // + (BYTES_CONSUMED+1)  % 4;
-#endif
 	if (len < 16) {
 		return 0;
 	}
 	int sz = 4;
-
-	// {
-	//	int sz2 = (4 - (addr + 1) % 4) + (addr + 1) % 4;
-	//	eprintf("Addr approach: 0x%04x and BYTES_CONSUMED approach: 0x%04" PFMT64x ", BYTES_CONSUMED%%4 = 0x%04x\n",
-	//		sz2, BYTES_CONSUMED, sz);
-	//}
 	init_switch_op();
 	IN_SWITCH_OP = 1;
 	SWITCH_OP.addr = addr;
@@ -89,12 +78,6 @@ static int update_switch_op(ut64 addr, const ut8 *bytes) {
 	if (ccase + 1 > SWITCH_OP.max_val) {
 		IN_SWITCH_OP = 0;
 	}
-	// {
-	//	eprintf("Addr approach: 0x%04" PFMT64x
-	//		" and BYTES_CONSUMED approach: 0x%04" PFMT64x
-	//		"\n",
-	//		addr, BYTES_CONSUMED);
-	//}
 	return update_bytes_consumed(sz);
 }
 
@@ -117,10 +100,6 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 		return handle_switch_op(addr, bytes, output, outlen);
 	}
 
-#if 0
-	// eprintf ("Handling the following opcode %s expects: %d byte(s), BYTES_CONSUMED: 0x%04"PFMT64x"\n",
-			JAVA_OPS[idx].name, JAVA_OPS[idx].size, BYTES_CONSUMED);
-#endif
 	switch (op_byte) {
 	case 0x10: // "bipush"
 		snprintf(output, outlen, "%s %d", JAVA_OPS[idx].name, (char)bytes[1]);
