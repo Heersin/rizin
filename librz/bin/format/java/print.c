@@ -1,9 +1,56 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 #include "print.h"
-#include "conversion.h"
 #include "internals.h"
 
 extern char *sanitize_string(const char *bytes, ut32 len);
+
+static double custom_pow(ut64 base, int exp) {
+	ut8 flag = 0;
+	ut64 res = 1;
+	if (exp < 0) {
+		flag = 1;
+		exp *= -1;
+	}
+	while (exp) {
+		if (exp & 1) {
+			res *= base;
+		}
+		exp >>= 1;
+		base *= base;
+		// eprintf("Result: %" PFMT64d ", base: %" PFMT64d ", exp: %d\n", res, base, exp);
+	}
+	if (flag == 0) {
+		return 1.0 * res;
+	}
+	return (1.0 / res);
+}
+
+double raw_to_double(const ut8 *raw, ut64 offset) {
+	ut64 bits = rz_read_at_be64(raw, offset);
+	int s = ((bits >> 63) == 0) ? 1 : -1;
+	int e = (int)((bits >> 52) & 0x7ffL);
+	long m = (e == 0) ? (bits & 0xfffffffffffffLL) << 1 : (bits & 0xfffffffffffffLL) | 0x10000000000000LL;
+	double res = 0.0;
+	// eprintf("Convert Long to Double: %08" PFMT64x "\n", bits);
+	if (bits == 0x7ff0000000000000LL) {
+		return INFINITY;
+	}
+	if (bits == 0xfff0000000000000LL) {
+		return -INFINITY;
+	}
+	if (0x7ff0000000000001LL <= bits && bits <= 0x7fffffffffffffffLL) {
+		return NAN;
+	}
+	if (0xfff0000000000001LL <= bits && bits <= 0xffffffffffffffffLL) {
+		return NAN;
+	}
+	res = s * m * custom_pow(2, e - 1075); // XXXX TODO Get double to work correctly here
+	// eprintf("	High-bytes = %02x %02x %02x %02x\n", raw[0], raw[1], raw[2], raw[3]);
+	// eprintf("	Low-bytes = %02x %02x %02x %02x\n", raw[4], raw[5], raw[6], raw[7]);
+	// eprintf("Convert Long to Double s: %d, m: 0x%08lx, e: 0x%08x, res: %f\n", s, m, e, res);
+	return res;
+}
+
 
 RZ_API void rz_bin_java_print_utf8_cp_summary(RzBinJavaCPTypeObj *obj) {
 	if (obj == NULL) {
@@ -526,7 +573,7 @@ RZ_API void rz_bin_java_print_integer_cp_summary(RzBinJavaCPTypeObj *obj) {
 	printf("Integer ConstantPool Type (%d) ", obj->metas->ord);
 	printf("	Offset: 0x%08" PFMT64x "", obj->file_offset);
 	printf("	bytes = %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3]);
-	printf("	integer = %d\n", raw_to_uint(obj->info.cp_integer.bytes.raw, 0));
+	printf("	integer = %d\n", rz_read_at_be32(obj->info.cp_integer.bytes.raw, 0));
 }
 
 RZ_API void rz_bin_java_print_float_cp_summary(RzBinJavaCPTypeObj *obj) {
@@ -553,7 +600,7 @@ RZ_API void rz_bin_java_print_long_cp_summary(RzBinJavaCPTypeObj *obj) {
 	printf("  Offset: 0x%08" PFMT64x "", obj->file_offset);
 	printf("  High-Bytes = %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3]);
 	printf("  Low-Bytes = %02x %02x %02x %02x\n", b[4], b[5], b[6], b[7]);
-	printf("  Long = %08" PFMT64x "\n", raw_to_long(obj->info.cp_long.bytes.raw, 0));
+	printf("  Long = %08" PFMT64x "\n", rz_read_at_be64(obj->info.cp_long.bytes.raw, 0));
 }
 
 RZ_API void rz_bin_java_print_double_cp_summary(RzBinJavaCPTypeObj *obj) {

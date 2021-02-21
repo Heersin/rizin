@@ -11,8 +11,6 @@
 #include <stdarg.h>
 #include "ops.h"
 #include "code.h"
-#include "class.h"
-#include "conversion.h"
 
 #define V if (verbose)
 
@@ -62,9 +60,9 @@ static int enter_switch_op(ut64 addr, const ut8 *bytes, int len) {
 	init_switch_op();
 	IN_SWITCH_OP = 1;
 	SWITCH_OP.addr = addr;
-	SWITCH_OP.def_jmp = (raw_to_uint(bytes, sz));
-	SWITCH_OP.min_val = (raw_to_uint(bytes, sz + 4));
-	SWITCH_OP.max_val = (raw_to_uint(bytes, sz + 8));
+	SWITCH_OP.def_jmp = (rz_read_at_be32(bytes, sz));
+	SWITCH_OP.min_val = (rz_read_at_be32(bytes, sz + 4));
+	SWITCH_OP.max_val = (rz_read_at_be32(bytes, sz + 8));
 	sz += 12;
 	return sz;
 }
@@ -102,7 +100,7 @@ static int update_switch_op(ut64 addr, const ut8 *bytes) {
 
 static int handle_switch_op(ut64 addr, const ut8 *bytes, char *output, int outlen) {
 	int sz = 4;
-	ut32 jmp = (int)(raw_to_uint(bytes, 0)) + SWITCH_OP.addr;
+	ut32 jmp = (int)(rz_read_at_be32(bytes, 0)) + SWITCH_OP.addr;
 	int ccase = SWITCH_OP.cur_val + SWITCH_OP.min_val;
 	snprintf(output, outlen, "case %d: goto 0x%04x", ccase, jmp);
 	update_switch_op(addr, bytes);
@@ -129,7 +127,7 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
 	case 0x11:
-		snprintf(output, outlen, "%s %d", JAVA_OPS[idx].name, (int)raw_to_ushort(bytes, 1));
+		snprintf(output, outlen, "%s %d", JAVA_OPS[idx].name, (int)rz_read_at_be16(bytes, 1));
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
 	case 0x15: // "iload"
@@ -153,18 +151,18 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 			snprintf(output, outlen, "%s %s", JAVA_OPS[idx].name, arg);
 			free(arg);
 		} else {
-			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, raw_to_ushort(bytes, 1));
+			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, rz_read_at_be16(bytes, 1));
 		}
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
 	case 0x13:
 	case 0x14:
-		arg = rz_bin_java_resolve_without_space(obj, (int)raw_to_ushort(bytes, 1));
+		arg = rz_bin_java_resolve_without_space(obj, (int)rz_read_at_be16(bytes, 1));
 		if (arg) {
 			snprintf(output, outlen, "%s %s", JAVA_OPS[idx].name, arg);
 			free(arg);
 		} else {
-			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, raw_to_ushort(bytes, 1));
+			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, rz_read_at_be16(bytes, 1));
 		}
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
@@ -191,7 +189,7 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 	case 0xa7: // goto
 	case 0xa8: // jsr
 		snprintf(output, outlen, "%s 0x%04" PFMT64x, JAVA_OPS[idx].name,
-			(addr + (short)raw_to_ushort(bytes, 1)));
+			(addr + (short)rz_read_at_be16(bytes, 1)));
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
 		// XXX - Figure out what constitutes the [<high>] value
@@ -207,12 +205,12 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 	case 0xb8: // invokestatic
 	case 0xb9: // invokeinterface
 	case 0xba: // invokedynamic
-		arg = rz_bin_java_resolve_without_space(obj, (int)raw_to_ushort(bytes, 1));
+		arg = rz_bin_java_resolve_without_space(obj, (int)rz_read_at_be16(bytes, 1));
 		if (arg) {
 			snprintf(output, outlen, "%s %s", JAVA_OPS[idx].name, arg);
 			free(arg);
 		} else {
-			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, raw_to_ushort(bytes, 1));
+			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, rz_read_at_be16(bytes, 1));
 		}
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
@@ -220,12 +218,12 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 	case 0xbd: // anewarray
 	case 0xc0: // checkcast
 	case 0xc1: // instance of
-		arg = rz_bin_java_resolve_without_space(obj, (int)raw_to_ushort(bytes, 1));
+		arg = rz_bin_java_resolve_without_space(obj, (int)rz_read_at_be16(bytes, 1));
 		if (arg) {
 			snprintf(output, outlen, "%s %s", JAVA_OPS[idx].name, arg);
 			free(arg);
 		} else {
-			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, raw_to_ushort(bytes, 1));
+			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, rz_read_at_be16(bytes, 1));
 		}
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);
@@ -233,12 +231,12 @@ RZ_API int java_print_opcode(RzBinJavaObj *obj, ut64 addr, int idx, const ut8 *b
 	case 0xb3: // putstatic
 	case 0xb4: // getfield
 	case 0xb5: // putfield
-		arg = rz_bin_java_resolve_with_space(obj, (int)raw_to_ushort(bytes, 1));
+		arg = rz_bin_java_resolve_with_space(obj, (int)rz_read_at_be16(bytes, 1));
 		if (arg) {
 			snprintf(output, outlen, "%s %s", JAVA_OPS[idx].name, arg);
 			free(arg);
 		} else {
-			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, raw_to_ushort(bytes, 1));
+			snprintf(output, outlen, "%s #%d", JAVA_OPS[idx].name, rz_read_at_be16(bytes, 1));
 		}
 		output[outlen - 1] = 0;
 		return update_bytes_consumed(JAVA_OPS[idx].size);

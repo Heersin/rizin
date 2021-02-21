@@ -89,6 +89,7 @@ static const RzCmdDescArg eval_readonly_args[2];
 static const RzCmdDescArg eval_spaces_args[2];
 static const RzCmdDescArg eval_type_args[2];
 static const RzCmdDescArg env_args[3];
+static const RzCmdDescArg cmd_java_args[3];
 static const RzCmdDescArg ls_args[2];
 static const RzCmdDescArg project_save_args[2];
 static const RzCmdDescArg project_open_args[2];
@@ -1531,6 +1532,27 @@ static const RzCmdDescHelp cmd_egg_help = {
 
 static const RzCmdDescHelp cmd_info_help = {
 	.summary = "Get info about opened binary file",
+};
+
+static const RzCmdDescArg cmd_java_args[] = {
+	{
+		.name = "subcmd",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.optional = false,
+
+	},
+	{
+		.name = "arg",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_ARRAY,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp cmd_java_help = {
+	.summary = "Suite of java commands",
+	.args = cmd_java_args,
 };
 
 static const RzCmdDescHelp cmd_kuery_help = {
@@ -3306,6 +3328,9 @@ RZ_IPI void newshell_cmddescs_init(RzCore *core) {
 
 	RzCmdDesc *cmd_info_cd = rz_cmd_desc_oldinput_new(core->rcmd, root_cd, "i", rz_cmd_info, &cmd_info_help);
 	rz_warn_if_fail(cmd_info_cd);
+
+	RzCmdDesc *cmd_java_cd = rz_cmd_desc_argv_new(core->rcmd, root_cd, "java", rz_cmd_java_handler, &cmd_java_help);
+	rz_warn_if_fail(cmd_java_cd);
 
 	RzCmdDesc *cmd_kuery_cd = rz_cmd_desc_oldinput_new(core->rcmd, root_cd, "k", rz_cmd_kuery, &cmd_kuery_help);
 	rz_warn_if_fail(cmd_kuery_cd);

@@ -2,7 +2,7 @@
 #define _INCLUDE_R_JAVA_H_
 
 #include <rz_types.h>
-#include "class.h"
+#include "../../bin/format/java/class.h"
 
 typedef struct java_op {
 	const char *name;

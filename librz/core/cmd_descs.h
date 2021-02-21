@@ -111,6 +111,7 @@ RZ_IPI RzCmdStatus rz_env_handler(RzCore *core, int argc, const char **argv);
 RZ_IPI int rz_cmd_flag(void *data, const char *input);
 RZ_IPI int rz_cmd_egg(void *data, const char *input);
 RZ_IPI int rz_cmd_info(void *data, const char *input);
+RZ_IPI RzCmdStatus rz_cmd_java_handler(RzCore *core, int argc, const char **argv);
 RZ_IPI int rz_cmd_kuery(void *data, const char *input);
 RZ_IPI RzCmdStatus rz_ls_handler(RzCore *core, int argc, const char **argv);
 RZ_IPI int rz_cmd_m(void *data, const char *input);

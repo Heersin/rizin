@@ -5,8 +5,8 @@
 #include <rz_lib.h>
 #include <rz_bin.h>
 
-#include "../../shlr/java/class.h"
-#include "../../shlr/java/code.h"
+#include "../asm/arch/java/code.h"
+#include "../format/java/class.h"
 
 #define IFDBG_BIN_JAVA if (0)
 

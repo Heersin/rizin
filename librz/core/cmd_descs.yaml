@@ -917,6 +917,17 @@
   cname: cmd_info
   summary: Get info about opened binary file
   type: RZ_CMD_DESC_TYPE_OLDINPUT
+- name: java
+  cname: cmd_java
+  summary: Suite of java commands
+  args:
+    - name: subcmd
+      type: RZ_CMD_ARG_TYPE_STRING
+      optional: false
+    - name: arg
+      type: RZ_CMD_ARG_TYPE_STRING
+      flags: RZ_CMD_ARG_FLAG_ARRAY
+      optional: true
 - name: k
   cname: cmd_kuery
   summary: Run sdb-query
