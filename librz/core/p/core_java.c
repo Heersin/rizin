@@ -1113,23 +1113,22 @@ static bool flags_str_address(const char *mcf, ut64 flag_value) {
 
 	switch (*(mcf)) {
 	case 'm':
-		flags_title = "Method Access Flags String: ";
+		flags_title = "Method Access Flags String:";
 		flags_string = retrieve_method_access_string(flag_value);
 		break;
 	case 'f':
-		flags_title = "Field Access Flags String: ";
+		flags_title = "Field Access Flags String:";
 		flags_string = retrieve_field_access_string(flag_value);
 		break;
 	case 'c':
-		flags_title = "Class Access Flags String: ";
+		flags_title = "Class Access Flags String:";
 		flags_string = retrieve_class_method_access_string(flag_value);
 		break;
 	default:
 		return false;
 	}
 	if (flags_string) {
-		rz_cons_printf(flags_title);
-		rz_cons_println(flags_string);
+		rz_cons_printf("%s %s\n", flags_title, flags_string);
 		free(flags_string);
 	}
 	return true;
