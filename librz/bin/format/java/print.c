@@ -51,7 +51,6 @@ double raw_to_double(const ut8 *raw, ut64 offset) {
 	return res;
 }
 
-
 RZ_API void rz_bin_java_print_utf8_cp_summary(RzBinJavaCPTypeObj *obj) {
 	if (obj == NULL) {
 		printf("Attempting to print an invalid RzBinJavaCPTypeObj*  Utf8.\n");
@@ -891,4 +890,3 @@ RZ_API void rz_bin_java_print_stack_map_append_frame_summary(RzBinJavaStackMapFr
 		rz_bin_java_print_verification_info_summary(ver_obj);
 	}
 }
-

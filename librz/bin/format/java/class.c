@@ -4999,7 +4999,6 @@ RZ_API void rz_bin_java_obj_free(void /*RzBinJavaCPTypeObj*/ *o) {
 	((RzBinJavaCPTypeMetas *)obj->metas->type_info)->allocs->delete_obj(obj);
 }
 
-
 RZ_API char *rz_bin_java_print_interfacemethodref_cp_stringify(RzBinJavaCPTypeObj *obj) {
 	ut32 size = 255, consumed = 0;
 	char *value = malloc(size);
@@ -8050,4 +8049,3 @@ RZ_API int rz_bin_java_get_cp_idx_with_name(RzBinJavaObj *bin_obj, const char *n
 	}
 	return 0;
 }
-
