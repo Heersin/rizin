@@ -7413,17 +7413,17 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *bin_obj,
 	cp_name = ((RzBinJavaCPTypeMetas *)item->metas->type_info)->name;
 	// eprintf("java_resolve Resolved: (%d) %s\n", idx, cp_name);
 	if (strcmp(cp_name, "Class") == 0) {
-		item2 = (RzBinJavaCPTypeObj *)rz_bin_java_get_item_from_bin_cp_list(BIN_OBJ, idx);
-		// str = rz_bin_java_get_name_from_bin_cp_list (BIN_OBJ, idx-1);
-		class_str = rz_bin_java_get_item_name_from_bin_cp_list(BIN_OBJ, item);
+		item2 = (RzBinJavaCPTypeObj *)rz_bin_java_get_item_from_bin_cp_list(bin_obj, idx);
+		// str = rz_bin_java_get_name_from_bin_cp_list (bin_obj, idx-1);
+		class_str = rz_bin_java_get_item_name_from_bin_cp_list(bin_obj, item);
 		if (!class_str) {
 			class_str = empty;
 		}
-		name_str = rz_bin_java_get_item_name_from_bin_cp_list(BIN_OBJ, item2);
+		name_str = rz_bin_java_get_item_name_from_bin_cp_list(bin_obj, item2);
 		if (!name_str) {
 			name_str = empty;
 		}
-		desc_str = rz_bin_java_get_item_desc_from_bin_cp_list(BIN_OBJ, item2);
+		desc_str = rz_bin_java_get_item_desc_from_bin_cp_list(bin_obj, item2);
 		if (!desc_str) {
 			desc_str = empty;
 		}
@@ -7447,15 +7447,15 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *bin_obj,
 		/*
 		*  The MethodRef, FieldRef, and InterfaceMethodRef structures
 		*/
-		class_str = rz_bin_java_get_name_from_bin_cp_list(BIN_OBJ, item->info.cp_method.class_idx);
+		class_str = rz_bin_java_get_name_from_bin_cp_list(bin_obj, item->info.cp_method.class_idx);
 		if (!class_str) {
 			class_str = empty;
 		}
-		name_str = rz_bin_java_get_item_name_from_bin_cp_list(BIN_OBJ, item);
+		name_str = rz_bin_java_get_item_name_from_bin_cp_list(bin_obj, item);
 		if (!name_str) {
 			name_str = empty;
 		}
-		desc_str = rz_bin_java_get_item_desc_from_bin_cp_list(BIN_OBJ, item);
+		desc_str = rz_bin_java_get_item_desc_from_bin_cp_list(bin_obj, item);
 		if (!desc_str) {
 			desc_str = empty;
 		}
@@ -7474,8 +7474,8 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *bin_obj,
 			free(desc_str);
 		}
 	} else if (strcmp(cp_name, "String") == 0) {
-		ut32 length = rz_bin_java_get_utf8_len_from_bin_cp_list(BIN_OBJ, item->info.cp_string.string_idx);
-		string_str = rz_bin_java_get_utf8_from_bin_cp_list(BIN_OBJ, item->info.cp_string.string_idx);
+		ut32 length = rz_bin_java_get_utf8_len_from_bin_cp_list(bin_obj, item->info.cp_string.string_idx);
+		string_str = rz_bin_java_get_utf8_from_bin_cp_list(bin_obj, item->info.cp_string.string_idx);
 		// eprintf("java_resolve String got: (%d) %s\n", item->info.cp_string.string_idx, string_str);
 		if (!string_str) {
 			string_str = empty;
@@ -7528,11 +7528,11 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *bin_obj,
 	} else if (strcmp(cp_name, "NameAndType") == 0) {
 		result->value._ref = RZ_NEW0(struct java_const_value_ref_t);
 		result->type = "ref";
-		name_str = rz_bin_java_get_item_name_from_bin_cp_list(BIN_OBJ, item);
+		name_str = rz_bin_java_get_item_name_from_bin_cp_list(bin_obj, item);
 		if (!name_str) {
 			name_str = empty;
 		}
-		desc_str = rz_bin_java_get_item_desc_from_bin_cp_list(BIN_OBJ, item);
+		desc_str = rz_bin_java_get_item_desc_from_bin_cp_list(bin_obj, item);
 		if (!desc_str) {
 			desc_str = empty;
 		}
@@ -7545,8 +7545,8 @@ RZ_API ConstJavaValue *rz_bin_java_resolve_to_const_value(RzBinJavaObj *bin_obj,
 		if (desc_str != empty) {
 			free(desc_str);
 		}
-		result->value._ref->is_method = rz_bin_java_does_cp_idx_ref_method(BIN_OBJ, idx);
-		result->value._ref->is_field = rz_bin_java_does_cp_idx_ref_field(BIN_OBJ, idx);
+		result->value._ref->is_method = rz_bin_java_does_cp_idx_ref_method(bin_obj, idx);
+		result->value._ref->is_field = rz_bin_java_does_cp_idx_ref_field(bin_obj, idx);
 	}
 	return result;
 }

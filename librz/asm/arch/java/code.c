@@ -12,8 +12,6 @@
 #include "ops.h"
 #include "code.h"
 
-#define V if (verbose)
-
 #ifndef RZ_API
 #define RZ_API
 #endif
@@ -35,7 +33,6 @@ typedef struct current_table_switch_t {
 
 static CurrentTableSwitch SWITCH_OP;
 static ut64 BYTES_CONSUMED = 0LL;
-//static RzBinJavaObj *BIN_OBJ = NULL;
 
 static void init_switch_op(void) {
 	memset(&SWITCH_OP, 0, sizeof(SWITCH_OP));
