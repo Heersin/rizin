@@ -197,9 +197,7 @@ bp_plugins = [
   'x86'
 ]
 
-core_plugins = [
-  'java'
-]
+core_plugins = []
 
 crypto_plugins = [
   'aes',
