@@ -83,6 +83,7 @@ asm_plugins = [
   'lanai_gnu',
   'lh5801',
   'lm32',
+  'luac',
   'm68k_cs',
   'm680x_cs',
   'malbolge',

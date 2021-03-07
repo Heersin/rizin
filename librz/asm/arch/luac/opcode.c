@@ -146,7 +146,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_MMBIN: /*	A B C	call C metamethod over R[A] and R[B]		*/
 	case OP_CALL: /*	A B C	R[A], ... ,R[A+C-2] := R[A](R[A+1], ... ,R[A+B-1]) */
 		/* fall through */
-		printf("%s, [A]-%i, [B]-%i, [C]-%i\n",
+		sprintf(op->buf_asm.buf ,"%s %i %i %i",
 			opnames[LUA_GET_OPCODE(instruction)],
 			LUA_GETARG_A(instruction),
 			LUA_GETARG_B(instruction),
@@ -159,7 +159,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_TAILCALL: /*	A B C k	return R[A](R[A+1], ... ,R[A+B-1])		*/
 	case OP_RETURN: /*	A B C k	return R[A], ... ,R[A+B-2]	(see note)	*/
 	case OP_SETLIST: /*	A B C k	R[A][C+i] := R[A+i], 1 <= i <= B		*/
-		printf("%s, [A]-%i, [B]-%i, [C]-%i k set\n",
+		sprintf(op->buf_asm.buf, "%s %i %i %i",
 			opnames[LUA_GET_OPCODE(instruction)],
 			LUA_GETARG_A(instruction),
 			LUA_GETARG_B(instruction),
@@ -168,7 +168,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 
 		/* iABC - signed B with k instruction */
 	case OP_MMBINI: /*	A sB C k	call C metamethod over R[A] and sB	*/
-                printf("%s, [A]-%i, [B]-%d, [C]-%i k set\n",
+                sprintf(op->buf_asm.buf, "%s %i %d %i",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_B(instruction),
@@ -179,7 +179,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_ADDI: /*	A B sC	R[A] := R[B] + sC				*/
 	case OP_SHRI: /*	A B sC	R[A] := R[B] >> sC				*/
 	case OP_SHLI: /*	A B sC	R[A] := sC << R[B]				*/
-                printf("%s, [A]-%i, [B]-%i, [C]-%d\n",
+                sprintf(op->buf_asm.buf, "%s %i %i %d",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_B(instruction),
@@ -196,7 +196,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_NOT: /* 	A B	R[A] := not R[B]				*/
 	case OP_LEN: /*	        A B	R[A] := #R[B] (length operator)			*/
 	case OP_CONCAT: /*	A B	R[A] := R[A].. ... ..R[A + B - 1]		*/
-                printf("%s, [A]-%i, [B]-%i\n",
+                sprintf(op->buf_asm.buf, "%s %i %i",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_B(instruction));
@@ -208,7 +208,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_LE: /*	        A B k	if ((R[A] <= R[B]) ~= k) then pc++		*/
 	case OP_EQK: /*	        A B k	if ((R[A] == K[B]) ~= k) then pc++		*/
 	case OP_TESTSET: /*	A B k	if (not R[B] == k) then pc++ else R[A] := R[B]	*/
-                printf("%s, [A]-%i, [B]-%i k set\n",
+                sprintf(op->buf_asm.buf, "%s %i %i",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_B(instruction));
@@ -220,7 +220,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_LEI: /*	        A sB k	if ((R[A] <= sB) ~= k) then pc++		*/
 	case OP_GTI: /*	        A sB k	if ((R[A] > sB) ~= k) then pc++			*/
 	case OP_GEI: /*	        A sB k	if ((R[A] >= sB) ~= k) then pc++		*/
-                printf("%s, [A]-%i, [B]-%d, k set\n",
+                sprintf(op->buf_asm.buf, "%s %i %d",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_B(instruction));
@@ -229,7 +229,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 		/* iABC - A & C instructions */
 	case OP_TFORCALL: /*	A C	R[A+4], ... ,R[A+3+C] := R[A](R[A+1], R[A+2]);	*/
 	case OP_VARARG: /*	A C	R[A], R[A+1], ..., R[A+C-2] = vararg		*/
-                printf("%s, [A]-%i, [C]-%i\n",
+                sprintf(op->buf_asm.buf, "%s %i %i",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_C(instruction));
@@ -244,7 +244,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_TBC: /*	        A	mark variable A "to be closed"			*/
 	case OP_RETURN1: /*	A	return R[A]					*/
 	case OP_VARARGPREP: /*  A	(adjust vararg parameters)			*/
-                printf("%s, [A]-%i\n",
+                sprintf(op->buf_asm.buf, "%s %i",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction));
 		break;
@@ -252,7 +252,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 		/* iABC - special instructions */
 	case OP_TEST: /*	A k	if (not R[A] == k) then pc++			*/
 	case OP_RETURN0: /*		return						*/
-                printf("%s\n",
+                sprintf(op->buf_asm.buf, "%s",
                        opnames[LUA_GET_OPCODE(instruction)]);
 		break;
 
@@ -264,7 +264,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 	case OP_TFORPREP: /*	A Bx	create upvalue for R[A + 3]; pc+=Bx		*/
 	case OP_TFORLOOP: /*	A Bx	if R[A+2] ~= nil then { R[A]=R[A+2]; pc -= Bx }	*/
 	case OP_CLOSURE: /*	A Bx	R[A] := closure(KPROTO[Bx])			*/
-		printf("%s [A]-%i, [Bx]-%i\n",
+		sprintf(op->buf_asm.buf, "%s %i %i",
 			opnames[LUA_GET_OPCODE(instruction)],
 			LUA_GETARG_A(instruction),
 			LUA_GETARG_Bx(instruction));
@@ -273,7 +273,7 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 		/* iAsBx instructions */
 	case OP_LOADI: /*	A sBx	R[A] := sBx					*/
 	case OP_LOADF: /*	A sBx	R[A] := (lua_Number)sBx				*/
-                printf("%s [A]-%i, [sBx]-%d\n",
+                sprintf(op->buf_asm.buf, "%s %i %d",
                        opnames[LUA_GET_OPCODE(instruction)],
                        LUA_GETARG_A(instruction),
                        LUA_GETARG_sBx(instruction));
@@ -281,13 +281,13 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 
 		/* iAx instructions */
 	case OP_EXTRAARG: /*	Ax	extra (larger) argument for previous opcode	*/
-		printf("%s [Ax]-%i\n",
+		sprintf(op->buf_asm.buf, "%s %i",
 			opnames[LUA_GET_OPCODE(instruction)],
 			LUA_GETARG_Ax(instruction));
 		break;
 		/* isJ instructions */
 	case OP_JMP: /*	        sJ	pc += sJ					*/
-		printf("%s [J]-%i\n",
+		sprintf(op->buf_asm.buf, "%s %i",
 			opnames[LUA_GET_OPCODE(instruction)],
 			LUA_GETARG_sJ(instruction));
 		break;
