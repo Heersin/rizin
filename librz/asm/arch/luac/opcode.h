@@ -62,6 +62,8 @@ typedef enum {
 /* fix value of signed args */
 #define LUAOP_FIX_sBx (LUAOP_MAXARG_Bx >> 1)
 #define LUAOP_FIX_sJ  (LUAOP_MAXARG_sJ >> 1)
+#define LUAOP_FIX_sC  (LUAOP_MAXARG_C >> 1)
+
 
 /* Opcode Instruction Type */
 typedef ut32 LuaInstruction;
@@ -188,6 +190,8 @@ typedef enum {
 
 /* Macros Highlight the cast */
 #define LUA_CAST(x, y) ((x)y)
+#define int2sC(i) ((i) + LUAOP_FIX_sC)
+#define sC2int(i) ((i) - LUAOP_FIX_sC)
 
 /* creates a mask with 'n' 1/0 bits at position 'p' */
 #define LUA_MASK1(n, p) ((~((~(LuaInstruction)0) << (n))) << (p))
@@ -206,6 +210,13 @@ typedef enum {
 #define LUA_GETARG_Ax(i)  LUA_GETARG(i, LUAOP_Ax_OFFSET, LUAOP_Ax_SIZE)
 #define LUA_GETARG_sBx(i) (LUA_GETARG_Bx(i) - LUAOP_FIX_sBx)
 #define LUA_GETARG_sJ(i)  (LUA_GETARG(i, LUAOP_sJ_OFFSET, LUAOP_sJ_SIZE) - LUAOP_FIX_sJ)
+#define LUA_GETARG_sC(i) sC2int(LUA_GETARG_C(i))
+#define LUA_GETARG_sB(i) sC2int(LUA_GETARG_B(i))
+
+#define LUA_GETARG_k(i)  LUA_GETARG(i, LUAOP_k_OFFSET, 1)
+
+#define ISK(isk) ((isk) ? "#CONST" : "#R")
+#define ISFLIP(isk) ((isk) ? "#FLIP" : "")
 
 /* About OpMode
 ** masks for instruction properties. The format is:
