@@ -13,4 +13,5 @@
 
 int luac_disasm(RzAsm *a, RzAsmOp *opstruct, const ut8 *buf, int len);
 
+
 #endif //BUILD_LUAC_DIS_H
