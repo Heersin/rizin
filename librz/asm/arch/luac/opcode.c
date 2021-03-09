@@ -411,5 +411,8 @@ int _lua54_disasm(RzAsmOp *op, const ut8 *buf, int len) {
 			ax);
 		break;
 	}
+
+	rz_strbuf_append(&op->buf_asm, asm_string);
+	op->size = 4;
 	return 4;
 }
