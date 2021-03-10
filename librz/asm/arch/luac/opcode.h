@@ -12,7 +12,16 @@
 #define LUA_CONST_PREF "CONST"
 #define LUA_KR_PREF "R/CONST"
 #define LUA_UPVALUE_PREF "UPV"
+#define LUA_EVENT_PREF "EVENT"
+#define LUA_KPROTO_PREF "KPROTO"
 #define LUA_NO_PREFIX ""
+
+/* Comment Mark */
+#define LUA_EXTRAARG_MARK  "#Ex"
+#define LUA_KFLAG_MARK "#Kflag"
+#define LUA_JMP_MARK "#To"
+#define LUA_CLOSURE_MARK "#CLOSURE"
+#define LUA_KX_MARK " CONST[#Ex]"
 
 /* Opcode Instruction Type */
 typedef ut32 LuaInstruction;
