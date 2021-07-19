@@ -971,12 +971,9 @@ void rz_analysis_rzil_free(RzAnalysisRzil *rzil) {
 
 RZ_IPI void rz_core_analysis_rzil_init_mem(RzCore *core) {
         RzILVM vm;
-        Mem mem;
         if (core->analysis->rzil && core->analysis->rzil->vm) {
                 vm = core->analysis->rzil->vm;
-                mem = rz_il_new_mem(vm->data_size);
-                vm->mems[0] = mem;
-                vm->mem_count = 1;
+		rz_il_vm_add_mem(vm, vm->data_size);
         }
 }
 
@@ -1022,9 +1019,9 @@ RZ_IPI void rz_core_rzil_step(RzCore *core, ut64 addr) {
 	BitVector cur_addr;
 	RzILVM vm = core->analysis->rzil->vm;
 
-	cur_addr = bv_new_from_ut64(64, addr);
+	cur_addr = rz_il_ut64_addr_to_bv(addr);
 	oplist = rz_il_vm_load_opcodes(vm, cur_addr);
-	bv_free(cur_addr);
+	rz_il_free_bv_addr(cur_addr);
 	rz_il_vm_list_step(vm, oplist);
 	rz_il_clean_temps(vm);
 }
