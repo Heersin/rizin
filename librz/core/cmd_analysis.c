@@ -5376,10 +5376,6 @@ static void cmd_analysis_esil(RzCore *core, const char *input) {
 }
 
 static void cmd_rzil_mem(RzCore *core, char *input) {
-        ut64 addr;
-        ut32 size;
-        char *name;
-
         switch (*input) {
 	case '+':
 	case '-':
