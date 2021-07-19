@@ -943,6 +943,92 @@ RZ_IPI void rz_core_analysis_esil_emulate_bb(RzCore *core) {
 	rz_core_analysis_esil_emulate(core, bb->addr, UT64_MAX, bb->ninstr);
 }
 
+/**********
+ * New Rizin IL (rzil) related things
+ *********/
+
+RzAnalysisRzil *rz_analysis_rzil_new() {
+	RzAnalysisRzil *rzil = RZ_NEW0(RzAnalysisRzil);
+        if (!rzil) {
+                return NULL;
+        }
+	rzil->vm = RZ_NEW0(struct rz_il_vm_t);
+	if (!rzil->vm) {
+		free(rzil);
+		return NULL;
+	}
+	return rzil;
+}
+
+void rz_analysis_rzil_free(RzAnalysisRzil *rzil) {
+	if (rzil->vm) {
+		rz_il_vm_close(rzil->vm);
+		rzil->vm = NULL;
+	}
+	free(rzil);
+}
+
+
+RZ_IPI void rz_core_analysis_rzil_init_mem(RzCore *core) {
+        RzILVM vm;
+        Mem mem;
+        if (core->analysis->rzil && core->analysis->rzil->vm) {
+                vm = core->analysis->rzil->vm;
+                mem = rz_il_new_mem(vm->data_size);
+                vm->mems[0] = mem;
+                vm->mem_count = 1;
+        }
+}
+
+RZ_IPI void core_rzil_init(RzCore *core) {
+	// real init;
+	// TODO : get args from config
+	//      currently it's bf specific
+	int addrsize = 64;
+	int datasize = 8;
+	ut64 start_addr = 0x1000;
+
+	RzAnalysisRzil *rzil;
+        if (!(rzil = rz_analysis_rzil_new())) {
+                return;
+        }
+	// init
+	rz_il_vm_init(rzil->vm, start_addr, addrsize, datasize);
+        core->analysis->rzil = rzil;
+
+	// TODO : get registers info from rizin
+	rz_il_vm_add_reg(rzil->vm, "ptr", rzil->vm->addr_size);
+}
+
+RZ_IPI void rz_core_analysis_rzil_init(RzCore *core) {
+	if (core->analysis->rzil) {
+		return;
+	}
+	core_rzil_init(core);
+}
+
+RZ_IPI void rz_core_analysis_rzil_reinit(RzCore *core) {
+	if (core->analysis->rzil) {
+		rz_analysis_rzil_free(core->analysis->rzil);
+		core->analysis->rzil = NULL;
+	}
+
+	core_rzil_init(core);
+}
+
+// step a list of ct_opcode at a given address
+RZ_IPI void rz_core_rzil_step(RzCore *core, ut64 addr) {
+	RzPVector *oplist;
+	BitVector cur_addr;
+	RzILVM vm = core->analysis->rzil->vm;
+
+	cur_addr = bv_new_from_ut64(64, addr);
+	oplist = rz_il_vm_load_opcodes(vm, cur_addr);
+	bv_free(cur_addr);
+	rz_il_vm_list_step(vm, oplist);
+	rz_il_clean_temps(vm);
+}
+
 static bool blacklisted_word(char *name) {
 	const char *list[] = {
 		"__stack_chk_guard",
