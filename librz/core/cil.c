@@ -422,31 +422,8 @@ RZ_IPI void rz_core_analysis_esil_default(RzCore *core) {
 
 
 /**********
- * New Rizin IL (rzil) related things
+ * New Rizin IL Core (rzil) related things
  *********/
-
-RzAnalysisRzil *rz_analysis_rzil_new() {
-        RzAnalysisRzil *rzil = RZ_NEW0(RzAnalysisRzil);
-        if (!rzil) {
-                return NULL;
-        }
-        rzil->vm = RZ_NEW0(struct rz_il_vm_t);
-        if (!rzil->vm) {
-                free(rzil);
-                return NULL;
-        }
-        return rzil;
-}
-
-void rz_analysis_rzil_free(RzAnalysisRzil *rzil) {
-        if (rzil->vm) {
-                rz_il_vm_close(rzil->vm);
-                rzil->vm = NULL;
-        }
-        free(rzil);
-}
-
-
 RZ_IPI void rz_core_analysis_rzil_init_mem(RzCore *core) {
         RzILVM vm;
         if (core->analysis->rzil && core->analysis->rzil->vm) {
