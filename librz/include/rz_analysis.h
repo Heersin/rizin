@@ -999,7 +999,7 @@ typedef struct rz_analysis_esil_trace_t {
 	ut64 stack_size;
 	ut8 *stack_data;
         // RzVector<RzILTraceInstruction>
-        RzVector *instructions;
+        RzPVector *instructions;
 } RzAnalysisEsilTrace;
 
 typedef int (*RzAnalysisEsilHookRegWriteCB)(ESIL *esil, const char *name, ut64 *val);
@@ -1463,12 +1463,12 @@ typedef struct {
 	ut64 addr;
 	ut32 stats;
 	// Vector<RzILTraceRegOp>
-	RzVector *write_mem_ops;
-	RzVector *read_mem_ops;
+	RzPVector *write_mem_ops;
+	RzPVector *read_mem_ops;
 
 	// Vector<RzILTraceRegOp>
-	RzVector *write_reg_ops;
-	RzVector *read_reg_ops;
+	RzPVector *write_reg_ops;
+	RzPVector *read_reg_ops;
 } RzILTraceInstruction;
 
 /* Independent Trace Functions */
