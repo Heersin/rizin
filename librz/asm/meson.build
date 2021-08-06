@@ -23,7 +23,7 @@ rz_asm_sources = [
   #'p/asm_gas.c',
   'p/asm_gb.c',
   'p/asm_h8300.c',
-  'p/asm_hexagon.c',
+  #'p/asm_hexagon.c',
   #'p/asm_hexagon_gnu.c',
   'p/asm_hppa_gnu.c',
   'p/asm_i4004.c',
