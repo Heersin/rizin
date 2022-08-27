@@ -1241,6 +1241,16 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	bool sign_y = rz_float_get_sign(right);
 	bool sign_z = (sign_x == sign_y) ? 1 : -1;
 
+	// help flag
+	bool tiny = 0;
+	st32 compare = false;
+	bool quo_is_odd = false;
+
+	// result of rem(x, y)
+	RzBitVector *mz;
+	ut32 ez;
+	RzFloat *z;
+
 	// make last bit of mantissa is 1
 	// TODO : add a scan function to bitvector lib (like clz but cnted from LSB to MSB)
 	ut32 k;
@@ -1263,34 +1273,118 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 
 		if (mag_level_mx < mag_level_my) {
 			// tiny, quotient = 0, remainder = mx
-			// TODO : complete me
+			tiny = 1;
+			z = rz_float_dup(left);
+			goto clean;
+		} else {
+			// mx mod my*2^(ey-ex)
+			// construct real number real_my = 2^(ey - ex) * my
+			RzBitVector *real_my = rz_bv_prepend_zero(my, my->len);
+			rz_bv_lshift(real_my, ey - ex);
+
+			// stretch mx to have the same length for calculation
+			RzBitVector *stretched_mx = rz_bv_prepend_zero(mx, mx->len);
+			RzBitVector *stretched_mz = rz_bv_mod(stretched_mx, real_my);
+			mz = rz_bv_cut_head(stretched_mz, my->len);
+
+			rz_bv_free(real_my);
+			rz_bv_free(stretched_mx);
+			rz_bv_free(stretched_mz);
 		}
-		else {
-			// divide mx by my*2^(ey-ex)
-			// TODO : complete me by bitvector
-		}
-	}
-	else {
+	} else {
 		// ex > ey
 		// preprocess for rounding
 		if (mode == RZ_FLOAT_RMODE_RTN) {
-			// TODO : complete me
 			// let my = my * 2
+			rz_bv_lshift(my, 1);
 		}
 
-		// calc mod
-		// let r = (2^(ex - ey) * mx) mod my
-		// TODO : complete me
+		// let r = mx * (2^(ex - ey) mod my) mod my
+		// build 2^(ex - ey) bv
+		ut32 aligned_length = ex - ey + 1;
+		RzBitVector *fact = rz_bv_new(aligned_length);
+		rz_bv_set(fact, fact->len - 1, true);
+
+		// mod my
+		RzBitVector *stretched_my = rz_bv_prepend_zero(my, aligned_length - my->len);
+		RzBitVector *fact_mod = rz_bv_mod(fact, stretched_my);
+		RzBitVector *mx_fact = rz_bv_cut_head(fact_mod, aligned_length - my->len);
+
+		// mul with mx, and then mod my
+		RzBitVector *mul_mx_fact = rz_bv_mul(mx, mx_fact);
+		mz = rz_bv_mod(mul_mx_fact, my);
+
+		// free temp bv
+		rz_bv_free(fact);
+		rz_bv_free(stretched_my);
+		rz_bv_free(fact_mod);
+		rz_bv_free(mx_fact);
 
 		// rounding
 		if (mode == RZ_FLOAT_RMODE_RTN) {
 			// let my = my / 2
+			rz_bv_shift_right_jammed(my, 1);
+			// todo quo_is_odd = |r| >= |my|
+			quo_is_odd = rz_bv_ule(my, mz);
+			if (quo_is_odd) {
+				// mz = mz - my
+				RzBitVector *tmp = rz_bv_sub(mz, my, NULL);
+				rz_bv_free(mz);
+				mz = tmp;
+				tmp = NULL;
+			}
 		}
 	}
 
 	// r == 0, return 0
+	if (rz_bv_is_zero_vector(mz)) {
+		z = rz_float_new_zero(left->r);
+		rz_bv_set(z->s, z->s->len, sign_z);
+		goto clean;
+	}
 
 	// 2r < y ? round(r) : round(r-my)
+	if (mode == RZ_FLOAT_RMODE_RTN) {
+		// r = 2 * r
+		rz_bv_lshift(mz, 1);
+
+		if (tiny) {
+			// detect magnitude
+			ut32 sz = mx->len - rz_bv_clz(mx);
+			ut32 sy = my->len - rz_bv_clz(my);
+			ut32 mag_level_mz = sz + ex;
+			ut32 mag_level_my = sy + ey;
+
+			if (mag_level_mz > mag_level_my) {
+				// equal
+				compare = 0;
+			} else {
+				// sz >= ey + sr - ex, shift is safe
+				// my * 2^(ey - ex)
+				rz_bv_lshift(my, ey - ex);
+				compare = rz_bv_cmp(mz, my);
+			}
+		} else {
+			// cmp mz with my
+			compare = rz_bv_cmp(mz, my);
+		}
+
+		rz_bv_shift_right_jammed(mz, 1);
+		if ((compare > 0) ||
+			((mode == RZ_FLOAT_RMODE_RTN) && (compare == 0) && (quo_is_odd))) {
+			// r = mz - my
+			RzBitVector *tmp = rz_bv_sub(mz, my, NULL);
+			rz_bv_free(mz);
+			mz = tmp;
+			tmp = NULL;
+		}
+	}
+
+	z = round_float_bv(sign_z, ex > ey ? ey : ex, mz, left->r, mode);
+clean:
+	rz_bv_free(mx);
+	rz_bv_free(my);
+	return z;
 }
 
 /**
