@@ -52,7 +52,6 @@ RZ_API RZ_OWN char *rz_float_as_hex_string(RZ_NULLABLE RzFloat *f, bool use_pad)
 RZ_API RZ_OWN char *rz_float_as_string(RZ_NONNULL RzFloat *f) {
 	rz_return_val_if_fail(f && f->s, NULL);
 
-	printf("format %d\n", f->r);
 	ut32 man_len = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_MAN_LEN);
 	ut32 exp_len = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_EXP_LEN);
 	ut32 total = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_TOTAL_LEN);
@@ -1232,14 +1231,28 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	RzBitVector *my = rz_float_get_mantissa(right);
 	RzBitVector *exp_x = rz_float_get_exponent(left);
 	RzBitVector *exp_y = rz_float_get_exponent(right);
-	ut32 ex = rz_bv_to_ut32(exp_x) - rz_float_get_format_info(left->r, RZ_FLOAT_INFO_BIAS);
-	ut32 ey = rz_bv_to_ut32(exp_y) - rz_float_get_format_info(right->r, RZ_FLOAT_INFO_BIAS);
+	ut32 bias = rz_float_get_format_info(left->r, RZ_FLOAT_INFO_BIAS);
+	ut32 ex = rz_bv_to_ut32(exp_x) - bias;
+	ut32 ey = rz_bv_to_ut32(exp_y) - bias;
 	rz_bv_free(exp_x);
 	rz_bv_free(exp_y);
 
 	bool sign_x = rz_float_get_sign(left);
 	bool sign_y = rz_float_get_sign(right);
-	bool sign_z = (sign_x == sign_y) ? 1 : -1;
+	bool sign_z = (sign_x != sign_y);
+
+	// reveal the hidden bit in IEEE, adjust exponent and mantissa
+	ut32 man_len = rz_float_get_format_info(left->r, RZ_FLOAT_INFO_MAN_LEN);
+
+	rz_bv_set(mx, man_len, true);
+	ex -= man_len;
+	rz_bv_set(my, man_len, true);
+	ey -= man_len;
+
+	printf("\n====== Entry ========\n");
+	printf("ex %d, ey %d\n", ex, ey);
+	print_bv(mx);
+	print_bv(my);
 
 	// help flag
 	bool tiny = 0;
@@ -1262,6 +1275,8 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 
 	ey += k;
 	rz_bv_rshift(my, k);
+	printf("shifted, ey : %d\n", ey);
+	print_bv(my);
 
 	// q = x/y = mx/(my*2^(ey-ex))
 	if (ex <= ey) {
@@ -1281,11 +1296,15 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 			// construct real number real_my = 2^(ey - ex) * my
 			RzBitVector *real_my = rz_bv_prepend_zero(my, my->len);
 			rz_bv_lshift(real_my, ey - ex);
+			printf("apply exponent to my\n");
+			print_bv(real_my);
 
 			// stretch mx to have the same length for calculation
 			RzBitVector *stretched_mx = rz_bv_prepend_zero(mx, mx->len);
 			RzBitVector *stretched_mz = rz_bv_mod(stretched_mx, real_my);
 			mz = rz_bv_cut_head(stretched_mz, my->len);
+			printf("ez = 0\n");
+			print_bv(mz);
 
 			rz_bv_free(real_my);
 			rz_bv_free(stretched_mx);
@@ -1324,7 +1343,6 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 		if (mode == RZ_FLOAT_RMODE_RTN) {
 			// let my = my / 2
 			rz_bv_shift_right_jammed(my, 1);
-			// todo quo_is_odd = |r| >= |my|
 			quo_is_odd = rz_bv_ule(my, mz);
 			if (quo_is_odd) {
 				// mz = mz - my
@@ -1380,7 +1398,27 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 		}
 	}
 
-	z = round_float_bv(sign_z, ex > ey ? ey : ex, mz, left->r, mode);
+	// result exponent
+	ez = ex > ey ? ey : ex;
+
+	// normalize before rounding
+	// make total - clz = man_len + 1, a normalized mz with hidden bit set
+	ut32 exp_len = rz_float_get_format_info(left->r, RZ_FLOAT_INFO_EXP_LEN);
+	st32 shift_dist = (st32)(rz_bv_clz(mz) - exp_len);
+	ez -= shift_dist;
+	if (shift_dist < 0) {
+		rz_bv_shift_right_jammed(mz, -shift_dist);
+	} else {
+		rz_bv_lshift(mz, shift_dist);
+	}
+
+	// recover IEEE mantissa and exponent
+	ez += man_len;
+	ez += bias;
+
+	printf("normalized ez : %d, sign z : %c\n", ez, sign_z ? '-' : '+');
+	print_bv(mz);
+	z = round_float_bv(sign_z, ez - 1, mz, left->r, mode);
 clean:
 	rz_bv_free(mx);
 	rz_bv_free(my);

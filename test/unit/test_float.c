@@ -7,6 +7,12 @@
 #define is_equal_bv(x, y)    (!rz_bv_cmp(x, y))
 #define is_equal_float(x, y) (!rz_bv_cmp((x)->s, (y)->s))
 
+void print_float(RzFloat *f) {
+	char *str = rz_float_as_string(f);
+	puts(str);
+	free(str);
+}
+
 bool f32_ieee_format_test(void) {
 	float val = 1.5f;
 	RzFloat *f = rz_float_new_from_single(val);
@@ -547,10 +553,14 @@ bool f32_ieee_special_num_test(void) {
 }
 
 bool f32_ieee_rem_test(void) {
+	printf("========= Test 1 ==========\n");
 	RzFloat *a1 = rz_float_new_from_single(4.0f);
 	RzFloat *b1 = rz_float_new_from_single(1.5f);
 	RzFloat *expect1 = rz_float_new_from_single(1.0f);
 	RzFloat *rem1 = rz_float_rem_ieee_bin(a1, b1, RZ_FLOAT_RMODE_RNE);
+	print_float(expect1);
+	print_float(rem1);
+
 	mu_assert_true(is_equal_float(rem1, expect1), "rem test 1");
 	rz_float_free(a1);
 	rz_float_free(b1);
