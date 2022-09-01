@@ -558,9 +558,6 @@ bool f32_ieee_rem_test(void) {
 	RzFloat *b1 = rz_float_new_from_single(1.5f);
 	RzFloat *expect1 = rz_float_new_from_single(1.0f);
 	RzFloat *rem1 = rz_float_rem_ieee_bin(a1, b1, RZ_FLOAT_RMODE_RNE);
-	print_float(expect1);
-	print_float(rem1);
-
 	mu_assert_true(is_equal_float(rem1, expect1), "rem test 1");
 	rz_float_free(a1);
 	rz_float_free(b1);
@@ -571,6 +568,9 @@ bool f32_ieee_rem_test(void) {
 	RzFloat *b2 = rz_float_new_from_hex_as_f32(0x44801003);
 	RzFloat *expect2 = rz_float_new_from_hex_as_f32(0xC3F52F40);
 	RzFloat *rem2 = rz_float_rem_ieee_bin(a2, b2, RZ_FLOAT_RMODE_RNE);
+	print_float(expect2);
+	print_float(rem2);
+
 	mu_assert_true(is_equal_float(rem2, expect2), "rem test 2");
 	rz_float_free(a2);
 	rz_float_free(b2);

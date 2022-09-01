@@ -1232,8 +1232,8 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	RzBitVector *exp_x = rz_float_get_exponent(left);
 	RzBitVector *exp_y = rz_float_get_exponent(right);
 	ut32 bias = rz_float_get_format_info(left->r, RZ_FLOAT_INFO_BIAS);
-	ut32 ex = rz_bv_to_ut32(exp_x) - bias;
-	ut32 ey = rz_bv_to_ut32(exp_y) - bias;
+	st32 ex = (st32)(rz_bv_to_ut32(exp_x) - bias);
+	st32 ey = (st32)(rz_bv_to_ut32(exp_y) - bias);
 	rz_bv_free(exp_x);
 	rz_bv_free(exp_y);
 
@@ -1296,7 +1296,7 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 			// construct real number real_my = 2^(ey - ex) * my
 			RzBitVector *real_my = rz_bv_prepend_zero(my, my->len);
 			rz_bv_lshift(real_my, ey - ex);
-			printf("apply exponent to my\n");
+			printf("apply exponent to my : * 2^(%d)\n", ey - ex);
 			print_bv(real_my);
 
 			// stretch mx to have the same length for calculation
@@ -1321,17 +1321,49 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 		// let r = mx * (2^(ex - ey) mod my) mod my
 		// build 2^(ex - ey) bv
 		ut32 aligned_length = ex - ey + 1;
-		RzBitVector *fact = rz_bv_new(aligned_length);
-		rz_bv_set(fact, fact->len - 1, true);
+
+		RzBitVector *fact;
+		RzBitVector *stretched_my;
+		bool is_stretched = false;
+		if (aligned_length < my->len) {
+			fact = rz_bv_new(my->len);
+			stretched_my = rz_bv_dup(my);
+		}
+		else
+		{
+			is_stretched = true;
+			fact = rz_bv_new(aligned_length);
+			stretched_my = rz_bv_prepend_zero(my, aligned_length - my->len);
+		}
+		rz_bv_set(fact, aligned_length - 1, true);
+		printf("fact , length : %d, stretched : %d\n", fact->len, stretched_my->len);
 
 		// mod my
-		RzBitVector *stretched_my = rz_bv_prepend_zero(my, aligned_length - my->len);
+		printf("prepend 0, my len : %d, aligned : %d\n", my->len, aligned_length);
+		printf("mod my\n");
 		RzBitVector *fact_mod = rz_bv_mod(fact, stretched_my);
-		RzBitVector *mx_fact = rz_bv_cut_head(fact_mod, aligned_length - my->len);
+		printf("cut head\n");
+
+		RzBitVector *mx_fact;
+		mx_fact = is_stretched ? rz_bv_cut_head(fact_mod, aligned_length - my->len) :
+				       rz_bv_dup(fact_mod);
 
 		// mul with mx, and then mod my
+		printf("mul mx mx_fact\n");
 		RzBitVector *mul_mx_fact = rz_bv_mul(mx, mx_fact);
+		printf("muled mod my\n");
 		mz = rz_bv_mod(mul_mx_fact, my);
+
+		printf("stretch_my : ");
+		print_bv(stretched_my);
+		printf("fact_mod   : ");
+		print_bv(fact_mod);
+		printf("mx_fact    : ");
+		print_bv(mx_fact);
+		printf("mul_mx_fact: ");
+		print_bv(mul_mx_fact);
+		printf("mz         : ");
+		print_bv(mz);
 
 		// free temp bv
 		rz_bv_free(fact);
@@ -1352,6 +1384,9 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 				tmp = NULL;
 			}
 		}
+
+		printf("ex > ey case\n");
+		print_bv(mz);
 	}
 
 	// r == 0, return 0
@@ -1401,7 +1436,7 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	// result exponent
 	ez = ex > ey ? ey : ex;
 
-	// normalize before rounding
+	// normalize
 	// make total - clz = man_len + 1, a normalized mz with hidden bit set
 	ut32 exp_len = rz_float_get_format_info(left->r, RZ_FLOAT_INFO_EXP_LEN);
 	st32 shift_dist = (st32)(rz_bv_clz(mz) - exp_len);
@@ -1415,6 +1450,11 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	// recover IEEE mantissa and exponent
 	ez += man_len;
 	ez += bias;
+
+	// apply to round_float_bv required format
+	// 01 MMMM MMMM ...
+	shift_dist = (st32)(exp_len - 1);
+	rz_bv_lshift(mz, shift_dist);
 
 	printf("normalized ez : %d, sign z : %c\n", ez, sign_z ? '-' : '+');
 	print_bv(mz);
