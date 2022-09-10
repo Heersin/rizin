@@ -1249,6 +1249,12 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	rz_bv_set(my, man_len, true);
 	ey -= man_len;
 
+	// every mantissa would become an big integer with clz(num) = 0
+	ex -= rz_bv_clz(mx);
+	ey -= rz_bv_clz(my);
+	rz_bv_lshift(mx, rz_bv_clz(mx));
+	rz_bv_lshift(my, rz_bv_clz(my));
+
 	printf("\n====== Entry ========\n");
 	printf("ex %d, ey %d\n", ex, ey);
 	print_bv(mx);
@@ -1318,41 +1324,48 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 			rz_bv_lshift(my, 1);
 		}
 
-		// let r = mx * (2^(ex - ey) mod my) mod my
-		// build 2^(ex - ey) bv
+		// r = mx * (2^(ex - ey) mod my) mod my
+		// 1. build 2^(ex - ey) bv
 		ut32 aligned_length = ex - ey + 1;
 
-		RzBitVector *fact;
+		RzBitVector *two_exponent_fact;
 		RzBitVector *stretched_my;
 		bool is_stretched = false;
 		if (aligned_length < my->len) {
-			fact = rz_bv_new(my->len);
+			two_exponent_fact = rz_bv_new(my->len);
 			stretched_my = rz_bv_dup(my);
 		}
 		else
 		{
 			is_stretched = true;
-			fact = rz_bv_new(aligned_length);
+			two_exponent_fact = rz_bv_new(aligned_length);
 			stretched_my = rz_bv_prepend_zero(my, aligned_length - my->len);
 		}
-		rz_bv_set(fact, aligned_length - 1, true);
-		printf("fact , length : %d, stretched : %d\n", fact->len, stretched_my->len);
+		rz_bv_set(two_exponent_fact, aligned_length - 1, true);
+		printf("fact , length : %d, stretched : %d\n", two_exponent_fact->len, stretched_my->len);
+		print_bv(two_exponent_fact);
 
-		// mod my
+		// 2. mod my for the 1st time
 		printf("prepend 0, my len : %d, aligned : %d\n", my->len, aligned_length);
 		printf("mod my\n");
-		RzBitVector *fact_mod = rz_bv_mod(fact, stretched_my);
+		RzBitVector *fact_mod = rz_bv_mod(two_exponent_fact, stretched_my);
 		printf("cut head\n");
 
 		RzBitVector *mx_fact;
 		mx_fact = is_stretched ? rz_bv_cut_head(fact_mod, aligned_length - my->len) :
 				       rz_bv_dup(fact_mod);
 
-		// mul with mx, and then mod my
+		// 3. mul with mx, and then mod my
 		printf("mul mx mx_fact\n");
-		RzBitVector *mul_mx_fact = rz_bv_mul(mx, mx_fact);
+		// mul maybe overflow, so stretch both
+		RzBitVector *mx_ext = rz_bv_prepend_zero(mx, mx->len);
+		RzBitVector *mx_fact_ext = rz_bv_prepend_zero(mx_fact, mx_fact->len);
+		RzBitVector *my_ext = rz_bv_prepend_zero(my, my->len);
+		RzBitVector *mul_ext = rz_bv_mul(mx_ext, mx_fact_ext);
 		printf("muled mod my\n");
-		mz = rz_bv_mod(mul_mx_fact, my);
+		RzBitVector *mz_ext;
+		mz_ext = rz_bv_mod(mul_ext, my_ext);
+		mz = rz_bv_cut_head(mz_ext, my->len);
 
 		printf("stretch_my : ");
 		print_bv(stretched_my);
@@ -1361,15 +1374,21 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 		printf("mx_fact    : ");
 		print_bv(mx_fact);
 		printf("mul_mx_fact: ");
-		print_bv(mul_mx_fact);
+		print_bv(mul_ext);
+		printf("mx         : ");
+		print_bv(mx);
 		printf("mz         : ");
 		print_bv(mz);
 
 		// free temp bv
-		rz_bv_free(fact);
+		rz_bv_free(two_exponent_fact);
 		rz_bv_free(stretched_my);
 		rz_bv_free(fact_mod);
 		rz_bv_free(mx_fact);
+		rz_bv_free(mx_ext);
+		rz_bv_free(mul_ext);
+		rz_bv_free(my_ext);
+		rz_bv_free(mz_ext);
 
 		// rounding
 		if (mode == RZ_FLOAT_RMODE_RTN) {
