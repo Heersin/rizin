@@ -1239,7 +1239,12 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 
 	bool sign_x = rz_float_get_sign(left);
 	bool sign_y = rz_float_get_sign(right);
-	bool sign_z = (sign_x != sign_y);
+
+	/* to get rid of sign problems, we compute it separately:
+	 * quo(-x,-y) = quo(x,y), rem(-x,-y) = -rem(x,y)
+	 * quo(-x,y) = -quo(x,y), rem(-x,y)  = -rem(x,y)
+	 * thus quo = sign(x/y)*quo(|x|,|y|), rem = sign(x)*rem(|x|,|y|) */
+	bool sign_z = sign_x;
 
 	// reveal the hidden bit in IEEE, adjust exponent and mantissa
 	ut32 man_len = rz_float_get_format_info(left->r, RZ_FLOAT_INFO_MAN_LEN);
