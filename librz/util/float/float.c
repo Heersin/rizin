@@ -1193,16 +1193,17 @@ RZ_API RZ_OWN RzFloat *rz_float_div_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 }
 
 /**
- * \brief calculate \p left % \p right and round the result after, return the result
+ * \brief calculate remainder of \p left % \p right and round the result after
  * \details
  * Any % 0 => NaN
  * Inf % Any => NaN, invalid
  * Any % Inf -> Any
  * 0 % Any -> 0
+ * \param quo_rnd quotient round mode, fmod use RTZ, frem use RNE
  * \param mode rounding mode
  * \return result of arithmetic operation
  */
-RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNULL RzFloat *right, RzFloatRMode mode) {
+static RZ_OWN RzFloat *rz_float_rem_internal(RZ_NONNULL RzFloat *left, RZ_NONNULL RzFloat *right, RzFloatRMode quo_rnd, RzFloatRMode mode) {
 	PROC_SPECIAL_FLOAT_START(left, right)
 	RzFloat *spec_ret = NULL;
 
@@ -1238,10 +1239,8 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	rz_bv_free(exp_y);
 
 	bool sign_x = rz_float_get_sign(left);
-	bool sign_y = rz_float_get_sign(right);
 
-	/* to get rid of sign problems, we compute it separately:
-	 * quo(-x,-y) = quo(x,y), rem(-x,-y) = -rem(x,y)
+	/* quo(-x,-y) = quo(x,y), rem(-x,-y) = -rem(x,y)
 	 * quo(-x,y) = -quo(x,y), rem(-x,y)  = -rem(x,y)
 	 * thus quo = sign(x/y)*quo(|x|,|y|), rem = sign(x)*rem(|x|,|y|) */
 	bool sign_z = sign_x;
@@ -1324,7 +1323,7 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	} else {
 		// ex > ey
 		// preprocess for rounding
-		if (mode == RZ_FLOAT_RMODE_RTN) {
+		if (quo_rnd == RZ_FLOAT_RMODE_RTN) {
 			// let my = my * 2
 			rz_bv_lshift(my, 1);
 		}
@@ -1396,7 +1395,7 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 		rz_bv_free(mz_ext);
 
 		// rounding
-		if (mode == RZ_FLOAT_RMODE_RTN) {
+		if (quo_rnd == RZ_FLOAT_RMODE_RTN) {
 			// let my = my / 2
 			rz_bv_shift_right_jammed(my, 1);
 			quo_is_odd = rz_bv_ule(my, mz);
@@ -1421,7 +1420,7 @@ RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNUL
 	}
 
 	// 2r < y ? round(r) : round(r-my)
-	if (mode == RZ_FLOAT_RMODE_RTN) {
+	if (quo_rnd == RZ_FLOAT_RMODE_RTN) {
 		// r = 2 * r
 		rz_bv_lshift(mz, 1);
 
@@ -1487,6 +1486,34 @@ clean:
 	rz_bv_free(mx);
 	rz_bv_free(my);
 	return z;
+}
+
+/**
+ * \brief calculate \p left % \p right and round the result after, return the result
+ * \details
+ * Any % 0 => NaN
+ * Inf % Any => NaN, invalid
+ * Any % Inf -> Any
+ * 0 % Any -> 0
+ * \param mode rounding mode
+ * \return result of arithmetic operation
+ */
+RZ_API RZ_OWN RzFloat *rz_float_rem_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNULL RzFloat *right, RzFloatRMode mode) {
+	return rz_float_rem_internal(left, right, RZ_FLOAT_RMODE_RNE, mode);
+}
+
+/**
+ * \brief calculate \p left % \p right and round the result after, return the result
+ * \details
+ * Any % 0 => NaN
+ * Inf % Any => NaN, invalid
+ * Any % Inf -> Any
+ * 0 % Any -> 0
+ * \param mode rounding mode
+ * \return result of arithmetic operation
+ */
+RZ_API RZ_OWN RzFloat *rz_float_mod_ieee_bin(RZ_NONNULL RzFloat *left, RZ_NONNULL RzFloat *right, RzFloatRMode mode) {
+	return rz_float_rem_internal(left, right, RZ_FLOAT_RMODE_RTZ, mode);
 }
 
 /**
