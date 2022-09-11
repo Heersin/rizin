@@ -62,12 +62,6 @@ static inline ut32 rz_float_info_bin128(RzFloatInfo which_info) {
 	}
 }
 
-static void print_bv(RzBitVector *bv) {
-	char *str = rz_bv_as_string(bv);
-	puts(str);
-	free(str);
-}
-
 /**
  * Shift right, but keeps LSB true if hit 1 during shift
  * \param x RzBitVector, pointer to bv
