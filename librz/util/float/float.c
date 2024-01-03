@@ -2282,6 +2282,134 @@ RZ_API RZ_OWN RzFloat *rz_float_sqrt_ieee_bin(RZ_NONNULL RzFloat *n, RzFloatRMod
 	return x;
 }
 
+RZ_API RZ_OWN RzFloat *rz_float_rsqrt(RZ_NONNULL RzFloat *n, RzFloatRMode mode) {
+    // not implemented yet
+    rz_warn_if_reached();
+    return NULL;
+}
+
+RZ_API RZ_OWN RzFloat *rz_float_pown(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode) {
+    // fast pow calculation
+    // a^n = a^(2^k1 + 2^k2 + ... + 2^kn)
+    //     = a^(2^k1) * a^(2^k2) * ... * a^(2^kn)
+    rz_return_val_if_fail(f && n, NULL);
+    RzFloatFormat format = f->r;
+
+    RzBitVector *bv_one = rz_bv_new_one(8);
+    RzFloat *float_one = rz_float_cast_float(bv_one, format, mode);
+    rz_bv_free(bv_one);
+
+    // n == 0
+    if (rz_bv_is_zero_vector(n)) {
+        // return 1
+        return float_one;
+    }
+
+    // n < 0
+    // ignore now ?
+    if (rz_bv_msb(n)) {
+        // return NULL
+        // TODO: ignore negative n now
+        rz_float_free(float_one);
+        rz_warn_if_reached();
+        return NULL;
+    }
+
+    // n > 0
+    ut32 bit_len = rz_bv_len(n) - rz_bv_ctz(n);
+    RzFloat *binary_term = rz_float_dup(float_one);
+    RzFloat *tmp_binary_term;
+    RzFloat *result = rz_float_dup(float_one);
+    RzFloat *tmp_result;
+
+    for (int i = 0; i < bit_len; ++i) {
+        if (rz_bv_get(n, i)) {
+            tmp_result = rz_float_mul(result, binary_term, mode);
+            rz_float_free(result);
+            result = tmp_result;
+        }
+        tmp_binary_term = rz_float_mul(binary_term, f, mode);
+        rz_float_free(binary_term);
+        binary_term = tmp_binary_term;
+    }
+
+    rz_float_free(binary_term);
+    rz_float_free(float_one);
+    return result;
+}
+
+RZ_API RZ_OWN RzFloat *rz_float_rootn(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode) {
+    // todo add an epsilon maker function in float lib
+    rz_return_val_if_fail(f && n, NULL);
+
+    ut32 bias = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_BIAS);
+    ut32 man_len = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_MAN_LEN);
+    ut32 eps_magic = bias - man_len;
+
+    RzBitVector *target_eps_bv = rz_bv_new_from_ut64(f->s->len, eps_magic);
+    rz_bv_lshift(target_eps_bv, man_len);
+    RzFloat *target_eps = rz_float_new_from_bv(target_eps_bv);
+    rz_bv_free(target_eps_bv);
+
+    RzFloat *abs, *eps;
+    RzFloat *pown, *lower_pown;
+    RzBitVector *prev_n;
+    RzFloat *tmp_result;
+    RzFloat *result;
+
+    RzBitVector *one = rz_bv_new_one(n->len);
+    prev_n = rz_bv_sub(n, one, NULL);
+    rz_bv_free(one);
+
+    // n & prev_n as float
+    RzFloat *n_float = rz_float_cast_sfloat(n, tmp_result->r, mode);
+    RzFloat *prev_n_float = rz_float_cast_sfloat(prev_n, tmp_result->r, mode);
+
+    tmp_result = rz_float_dup(f);
+
+    while(1) {
+        pown = rz_float_pown(tmp_result, n, mode);
+        eps = rz_float_sub(pown, f, mode);
+        abs = rz_float_abs(eps);
+
+        // reach expected precision
+        if (rz_float_cmp(abs, target_eps) < 0) {
+            result = tmp_result;
+            rz_float_free(abs);
+            rz_float_free(eps);
+            rz_float_free(pown);
+            break;
+        }
+
+        lower_pown = rz_float_pown(tmp_result, prev_n, mode);
+        RzFloat *term1 = rz_float_mul(tmp_result, prev_n_float, mode);
+        RzFloat *term2 = rz_float_div(tmp_result, lower_pown, mode);
+        RzFloat *term_plus = rz_float_add(term1, term2, mode);
+
+        rz_float_free(tmp_result);
+        tmp_result = rz_float_div(term_plus, n_float, mode);
+
+        // clean local
+        rz_float_free(term1);
+        rz_float_free(term2);
+        rz_float_free(term_plus);
+
+        // clean for next iteration
+        rz_float_free(abs);
+        rz_float_free(eps);
+        rz_float_free(pown);
+        rz_float_free(lower_pown);
+    }
+
+    rz_bv_free(prev_n);
+    rz_float_free(n_float);
+    rz_float_free(prev_n_float);
+    rz_float_free(target_eps);
+    result = tmp_result;
+
+    return result;
+}
+
 /** \} */ // end rz_float_arithmetic_group
 
 /**

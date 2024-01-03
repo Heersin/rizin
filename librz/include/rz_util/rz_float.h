@@ -152,6 +152,9 @@ RZ_API RZ_OWN RzFloat *rz_float_rem(RZ_NONNULL RzFloat *left, RZ_NONNULL RzFloat
 RZ_API RZ_OWN RzFloat *rz_float_mod(RZ_NONNULL RzFloat *left, RZ_NONNULL RzFloat *right, RzFloatRMode mode);
 RZ_API RZ_OWN RzFloat *rz_float_fma(RZ_NONNULL RzFloat *a, RZ_NONNULL RzFloat *b, RZ_NONNULL RzFloat *c, RzFloatRMode mode);
 RZ_API RZ_OWN RzFloat *rz_float_sqrt(RZ_NONNULL RzFloat *n, RzFloatRMode mode);
+RZ_API RZ_OWN RzFloat *rz_float_rsqrt(RZ_NONNULL RzFloat *n, RzFloatRMode mode);
+RZ_API RZ_OWN RzFloat *rz_float_pown(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode);
+RZ_API RZ_OWN RzFloat *rz_float_rootn(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode);
 
 RZ_API RZ_OWN RzFloat *rz_float_trunc(RZ_NONNULL RzFloat *f);
 RZ_API RZ_OWN RzFloat *rz_float_abs(RZ_NONNULL RzFloat *f);
