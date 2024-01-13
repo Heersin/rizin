@@ -2287,15 +2287,18 @@ static RZ_OWN RzFloat *rz_make_default_eps_ieee(RzFloatFormat format) {
  */
 RZ_API RZ_OWN RzFloat *rz_float_sqrt_ieee_bin(RZ_NONNULL RzFloat *n, RzFloatRMode mode) {
 	// Use Newton method now, May Optimize
-	RzFloat *eps = rz_float_new_zero(n->r);
-	ut32 bias = rz_float_get_format_info(n->r, RZ_FLOAT_INFO_BIAS);
-	ut32 man_len = rz_float_get_format_info(n->r, RZ_FLOAT_INFO_MAN_LEN);
-	ut32 eps_magic = bias - man_len;
+	rz_return_val_if_fail(NULL, n);
+	if (rz_float_is_negative(n)) {
+		// not allow sqrt(-n) for now
+		// TODO: maybe NaN ? Check ieee standard
+		return NULL;
+	}
 
-	RzBitVector *eps_bv = rz_bv_new_from_ut64(n->s->len, eps_magic);
-	rz_bv_lshift(eps_bv, man_len);
-	RzFloat *x = rz_float_new_from_bv(eps_bv);
-	rz_bv_free(eps_bv);
+	// gen epsilon
+	RzFloat *eps = rz_make_default_eps_ieee(n->r);
+
+	// init as n
+	RzFloat *x = rz_float_dup(n);
 
 	while (true) {
 		RzFloat *q = rz_float_div_ieee_bin(n, x, mode);
@@ -2439,9 +2442,7 @@ RZ_API RZ_OWN RzFloat *rz_float_pown(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVect
 	rz_return_val_if_fail(f && n, NULL);
 	RzFloatFormat format = f->r;
 
-	RzBitVector *bv_one = rz_bv_new_one(8);
-	RzFloat *float_one = rz_float_cast_float(bv_one, format, mode);
-	rz_bv_free(bv_one);
+	RzFloat *float_one = rz_float_new_one(format);
 
 	// n == 0
 	if (rz_bv_is_zero_vector(n)) {
@@ -2483,17 +2484,18 @@ RZ_API RZ_OWN RzFloat *rz_float_pown(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVect
 }
 
 RZ_API RZ_OWN RzFloat *rz_float_rootn(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode) {
-	// todo add an epsilon maker function in float lib
 	rz_return_val_if_fail(f && n, NULL);
+	// not allow negative n
+	if (rz_bv_msb(n)) {
+		return NULL;
+	}
 
-	ut32 bias = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_BIAS);
-	ut32 man_len = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_MAN_LEN);
-	ut32 eps_magic = bias - man_len;
+	if (rz_float_is_negative(f)) {
+		// TODO: check if return NaN
+		return NULL;
+	}
 
-	RzBitVector *target_eps_bv = rz_bv_new_from_ut64(f->s->len, eps_magic);
-	rz_bv_lshift(target_eps_bv, man_len);
-	RzFloat *target_eps = rz_float_new_from_bv(target_eps_bv);
-	rz_bv_free(target_eps_bv);
+	RzFloat *target_eps = rz_make_default_eps_ieee(f->r);
 
 	RzFloat *abs, *eps;
 	RzFloat *pown, *lower_pown;
@@ -2501,9 +2503,7 @@ RZ_API RZ_OWN RzFloat *rz_float_rootn(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVec
 	RzFloat *tmp_result;
 	RzFloat *result;
 
-	RzBitVector *one = rz_bv_new_one(n->len);
-	prev_n = rz_bv_sub(n, one, NULL);
-	rz_bv_free(one);
+	prev_n = rz_bv_pred(n);
 
 	// n & prev_n as float
 	RzFloat *n_float = rz_float_cast_sfloat(n, tmp_result->r, mode);
