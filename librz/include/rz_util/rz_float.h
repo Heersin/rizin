@@ -182,4 +182,6 @@ RZ_API RZ_OWN RzFloat *rz_float_cast_sfloat(RZ_NONNULL RzBitVector *bv, RzFloatF
 RZ_API RZ_OWN RzBitVector *rz_float_cast_int(RZ_NONNULL RzFloat *f, ut32 length, RzFloatRMode mode);
 RZ_API RZ_OWN RzBitVector *rz_float_cast_sint(RZ_NONNULL RzFloat *f, ut32 length, RzFloatRMode mode);
 RZ_API RZ_OWN RzFloat *rz_float_convert(RZ_NONNULL RzFloat *f, RzFloatFormat format, RzFloatRMode mode);
+
+RZ_API RZ_OWN RzFloat *rz_float_new_one(RzFloatFormat format);
 #endif // RZ_FLOAT_H

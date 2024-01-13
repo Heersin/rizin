@@ -591,6 +591,30 @@ RZ_API RZ_OWN RzFloat *rz_float_new_from_f128(long double value) {
 }
 
 /**
+ * \brief Create 1.0 according to float format
+ * \param format format of float
+ * \return float 1.0 with given format
+ */
+RZ_API RZ_OWN RzFloat *rz_float_new_one(RzFloatFormat format) {
+	if (format >= RZ_FLOAT_UNK) {
+		return NULL;
+	}
+
+	ut64 total_len = rz_float_get_format_info(format, RZ_FLOAT_INFO_TOTAL_LEN);
+	ut64 exp_len = rz_float_get_format_info(format, RZ_FLOAT_INFO_EXP_LEN);
+	ut64 exp_start = rz_float_get_format_info(format, RZ_FLOAT_INFO_MAN_LEN);
+	ut64 exp_end = exp_start + exp_len - 1;
+
+	// construct exponent part as 011111...
+	RzBitVector *bv = rz_bv_new_zero(total_len);
+	rz_bv_set_range(bv, exp_start, exp_end, 1);
+
+	// other bits leaves as 0
+	RzFloat *f_one = rz_float_new_from_bv(bv);
+	return f_one;
+}
+
+/**
  * \brief      Tries to convert a bitvector with a fixed size into a float number
  *
  * \param[in]  bv    The bitvector to cast
@@ -2234,6 +2258,29 @@ clean:
 }
 
 /**
+ * generate an epsilon float with default precision for comparing
+ * value of epsilon is close to 1e-7 for 32-bit, and 2e-16 for 64-bit ...
+ * \return return an epsilon with default epsilon, NULL if invalid format
+ */
+static RZ_OWN RzFloat *rz_make_default_eps_ieee(RzFloatFormat format) {
+	if (format >= RZ_FLOAT_UNK) {
+		return NULL;
+	}
+
+	ut32 bias = rz_float_get_format_info(format, RZ_FLOAT_INFO_BIAS);
+	ut32 man_len = rz_float_get_format_info(format, RZ_FLOAT_INFO_MAN_LEN);
+	ut32 total_len = rz_float_get_format_info(format, RZ_FLOAT_INFO_TOTAL_LEN);
+	ut32 eps_magic = bias - man_len;
+
+	RzBitVector *eps_bv = rz_bv_new_from_ut64(total_len, eps_magic);
+	rz_bv_lshift(eps_bv, man_len);
+	RzFloat *eps = rz_float_new_from_bv(eps_bv);
+	rz_bv_free(eps_bv);
+
+	return eps;
+}
+
+/**
  * calculate the root of \p n, and round the result after, return the result
  * \param mode rounding mode
  * \return result of arithmetic operation
@@ -2282,132 +2329,229 @@ RZ_API RZ_OWN RzFloat *rz_float_sqrt_ieee_bin(RZ_NONNULL RzFloat *n, RzFloatRMod
 	return x;
 }
 
-RZ_API RZ_OWN RzFloat *rz_float_rsqrt(RZ_NONNULL RzFloat *n, RzFloatRMode mode) {
-    // not implemented yet
-    rz_warn_if_reached();
-    return NULL;
+RZ_API RZ_OWN RzFloat *rz_float_rsqrt(RZ_NONNULL RzFloat *f, RzFloatRMode mode) {
+	// Inverse sqrt
+	rz_return_val_if_fail(f, NULL);
+
+	// assume not f is non-negative
+	if (rz_float_is_negative(f)) {
+		return NULL;
+	}
+
+	// fast inverse sqrt
+	// construct newton iteration constant
+	// yii = yi * (3/2 - 1/2 * f * yi^2)
+	RzFloatFormat format = f->r;
+	RzFloat *th = rz_float_new_from_f64(1.5);
+	RzFloat *three_half = rz_float_convert(th, format, RZ_FLOAT_RMODE_RNE);
+	RzFloat *half = rz_half_float(f);
+
+	rz_float_free(th);
+
+	if (format == RZ_FLOAT_IEEE754_BIN_32 || format == RZ_FLOAT_IEEE754_BIN_64) {
+		// construct magic and const
+		RzBitVector *magic = format == RZ_FLOAT_IEEE754_BIN_32 ? rz_bv_new_from_ut64(32, 0x5f375a86) : rz_bv_new_from_ut64(64, 0x5FE6EB50C7B537A9);
+
+		// calculate approximation for init value of y0
+
+		// convert float as bv, and rshift i >> 1
+		RzBitVector *f_as_bv = rz_bv_dup(f->s);
+		rz_bv_rshift(f_as_bv, 1);
+		// build y0 as magic - (i >> 1)
+		RzBitVector *y0 = rz_bv_sub(magic, f_as_bv, NULL);
+
+		// convert back to float
+		RzFloat *y0_as_float = rz_float_new_from_bv(y0);
+		// newton iteration once
+		// y1 = y0 * (3/2 - 1/2 * f * y0^2)
+		RzFloat *rsqrt_tmp1 = rz_float_mul(y0_as_float, y0_as_float, mode);
+		RzFloat *rsqrt_tmp2 = rz_float_mul(half, rsqrt_tmp1, mode);
+		RzFloat *rsqrt_tmp3 = rz_float_sub(three_half, rsqrt_tmp2, mode);
+		RzFloat *rsqrt_f = rz_float_mul(y0_as_float, rsqrt_tmp3, mode);
+
+		rz_float_free(y0_as_float);
+		rz_float_free(rsqrt_tmp1);
+		rz_float_free(rsqrt_tmp2);
+		rz_float_free(rsqrt_tmp3);
+		rz_bv_free(y0);
+		rz_bv_free(f_as_bv);
+		rz_float_free(three_half);
+		rz_float_free(half);
+
+		return rsqrt_f;
+	}
+
+	// general newton way
+	RzFloat *one_float = rz_float_new_one(format);
+	RzFloat *target_eps = rz_make_default_eps_ieee(format);
+	// y0 = 1 / f
+	RzFloat *y = rz_float_div(one_float, f, mode);
+	RzFloat *eps, *y_square, *next_y;
+	RzFloat *tmp1, *tmp2, *tmp3;
+	while (true) {
+		// y * y
+		y_square = rz_float_mul(y, y, mode);
+		// f * y * y
+		tmp1 = rz_float_mul(f, y_square, mode);
+		// eps = abs(1.0 - f * y^2)
+		eps = rz_float_sub(one_float, tmp1, mode);
+		rz_make_fabs(eps);
+
+		// eps <= target_eps, return
+		if (rz_float_cmp(target_eps, eps) >= 0) {
+			// break out
+			rz_float_free(y_square);
+			rz_float_free(tmp1);
+			rz_float_free(eps);
+			break;
+		}
+
+		// iteration to get next approximation to rsqrt(f)
+		// 1/2 * y^2
+		tmp2 = rz_float_mul(half, y_square, mode);
+		// 3/2 - 1/2 * y^2
+		tmp3 = rz_float_sub(three_half, tmp2, mode);
+		// yi+1 = yi * (3/2 - 1/2 * yi^2)
+		next_y = rz_float_mul(y, tmp3, mode);
+
+		rz_float_free(y_square);
+		rz_float_free(tmp1);
+		rz_float_free(eps);
+		rz_float_free(tmp2);
+		rz_float_free(tmp3);
+		rz_float_free(y);
+
+		y = next_y;
+		next_y = NULL;
+	}
+
+	rz_float_free(three_half);
+	rz_float_free(half);
+	rz_float_free(one_float);
+	rz_float_free(target_eps);
+	return y;
 }
 
 RZ_API RZ_OWN RzFloat *rz_float_pown(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode) {
-    // fast pow calculation
-    // a^n = a^(2^k1 + 2^k2 + ... + 2^kn)
-    //     = a^(2^k1) * a^(2^k2) * ... * a^(2^kn)
-    rz_return_val_if_fail(f && n, NULL);
-    RzFloatFormat format = f->r;
+	// fast pow calculation
+	// a^n = a^(2^k1 + 2^k2 + ... + 2^kn)
+	//     = a^(2^k1) * a^(2^k2) * ... * a^(2^kn)
+	rz_return_val_if_fail(f && n, NULL);
+	RzFloatFormat format = f->r;
 
-    RzBitVector *bv_one = rz_bv_new_one(8);
-    RzFloat *float_one = rz_float_cast_float(bv_one, format, mode);
-    rz_bv_free(bv_one);
+	RzBitVector *bv_one = rz_bv_new_one(8);
+	RzFloat *float_one = rz_float_cast_float(bv_one, format, mode);
+	rz_bv_free(bv_one);
 
-    // n == 0
-    if (rz_bv_is_zero_vector(n)) {
-        // return 1
-        return float_one;
-    }
+	// n == 0
+	if (rz_bv_is_zero_vector(n)) {
+		// return 1
+		return float_one;
+	}
 
-    // n < 0
-    // ignore now ?
-    if (rz_bv_msb(n)) {
-        // return NULL
-        // TODO: ignore negative n now
-        rz_float_free(float_one);
-        rz_warn_if_reached();
-        return NULL;
-    }
+	// n < 0
+	// ignore now ?
+	if (rz_bv_msb(n)) {
+		// return NULL
+		// TODO: ignore negative n now
+		rz_float_free(float_one);
+		rz_warn_if_reached();
+		return NULL;
+	}
 
-    // n > 0
-    ut32 bit_len = rz_bv_len(n) - rz_bv_ctz(n);
-    RzFloat *binary_term = rz_float_dup(float_one);
-    RzFloat *tmp_binary_term;
-    RzFloat *result = rz_float_dup(float_one);
-    RzFloat *tmp_result;
+	// n > 0
+	ut32 bit_len = rz_bv_len(n) - rz_bv_ctz(n);
+	RzFloat *binary_term = rz_float_dup(float_one);
+	RzFloat *tmp_binary_term;
+	RzFloat *result = rz_float_dup(float_one);
+	RzFloat *tmp_result;
 
-    for (int i = 0; i < bit_len; ++i) {
-        if (rz_bv_get(n, i)) {
-            tmp_result = rz_float_mul(result, binary_term, mode);
-            rz_float_free(result);
-            result = tmp_result;
-        }
-        tmp_binary_term = rz_float_mul(binary_term, f, mode);
-        rz_float_free(binary_term);
-        binary_term = tmp_binary_term;
-    }
+	for (int i = 0; i < bit_len; ++i) {
+		if (rz_bv_get(n, i)) {
+			tmp_result = rz_float_mul(result, binary_term, mode);
+			rz_float_free(result);
+			result = tmp_result;
+		}
+		tmp_binary_term = rz_float_mul(binary_term, f, mode);
+		rz_float_free(binary_term);
+		binary_term = tmp_binary_term;
+	}
 
-    rz_float_free(binary_term);
-    rz_float_free(float_one);
-    return result;
+	rz_float_free(binary_term);
+	rz_float_free(float_one);
+	return result;
 }
 
 RZ_API RZ_OWN RzFloat *rz_float_rootn(RZ_NONNULL RzFloat *f, RZ_NONNULL RzBitVector *n, RzFloatRMode mode) {
-    // todo add an epsilon maker function in float lib
-    rz_return_val_if_fail(f && n, NULL);
+	// todo add an epsilon maker function in float lib
+	rz_return_val_if_fail(f && n, NULL);
 
-    ut32 bias = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_BIAS);
-    ut32 man_len = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_MAN_LEN);
-    ut32 eps_magic = bias - man_len;
+	ut32 bias = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_BIAS);
+	ut32 man_len = rz_float_get_format_info(f->r, RZ_FLOAT_INFO_MAN_LEN);
+	ut32 eps_magic = bias - man_len;
 
-    RzBitVector *target_eps_bv = rz_bv_new_from_ut64(f->s->len, eps_magic);
-    rz_bv_lshift(target_eps_bv, man_len);
-    RzFloat *target_eps = rz_float_new_from_bv(target_eps_bv);
-    rz_bv_free(target_eps_bv);
+	RzBitVector *target_eps_bv = rz_bv_new_from_ut64(f->s->len, eps_magic);
+	rz_bv_lshift(target_eps_bv, man_len);
+	RzFloat *target_eps = rz_float_new_from_bv(target_eps_bv);
+	rz_bv_free(target_eps_bv);
 
-    RzFloat *abs, *eps;
-    RzFloat *pown, *lower_pown;
-    RzBitVector *prev_n;
-    RzFloat *tmp_result;
-    RzFloat *result;
+	RzFloat *abs, *eps;
+	RzFloat *pown, *lower_pown;
+	RzBitVector *prev_n;
+	RzFloat *tmp_result;
+	RzFloat *result;
 
-    RzBitVector *one = rz_bv_new_one(n->len);
-    prev_n = rz_bv_sub(n, one, NULL);
-    rz_bv_free(one);
+	RzBitVector *one = rz_bv_new_one(n->len);
+	prev_n = rz_bv_sub(n, one, NULL);
+	rz_bv_free(one);
 
-    // n & prev_n as float
-    RzFloat *n_float = rz_float_cast_sfloat(n, tmp_result->r, mode);
-    RzFloat *prev_n_float = rz_float_cast_sfloat(prev_n, tmp_result->r, mode);
+	// n & prev_n as float
+	RzFloat *n_float = rz_float_cast_sfloat(n, tmp_result->r, mode);
+	RzFloat *prev_n_float = rz_float_cast_sfloat(prev_n, tmp_result->r, mode);
 
-    tmp_result = rz_float_dup(f);
+	tmp_result = rz_float_dup(f);
 
-    while(1) {
-        pown = rz_float_pown(tmp_result, n, mode);
-        eps = rz_float_sub(pown, f, mode);
-        abs = rz_float_abs(eps);
+	while (1) {
+		pown = rz_float_pown(tmp_result, n, mode);
+		eps = rz_float_sub(pown, f, mode);
+		abs = rz_float_abs(eps);
 
-        // reach expected precision
-        if (rz_float_cmp(abs, target_eps) < 0) {
-            result = tmp_result;
-            rz_float_free(abs);
-            rz_float_free(eps);
-            rz_float_free(pown);
-            break;
-        }
+		// reach expected precision
+		if (rz_float_cmp(abs, target_eps) < 0) {
+			result = tmp_result;
+			rz_float_free(abs);
+			rz_float_free(eps);
+			rz_float_free(pown);
+			break;
+		}
 
-        lower_pown = rz_float_pown(tmp_result, prev_n, mode);
-        RzFloat *term1 = rz_float_mul(tmp_result, prev_n_float, mode);
-        RzFloat *term2 = rz_float_div(tmp_result, lower_pown, mode);
-        RzFloat *term_plus = rz_float_add(term1, term2, mode);
+		lower_pown = rz_float_pown(tmp_result, prev_n, mode);
+		RzFloat *term1 = rz_float_mul(tmp_result, prev_n_float, mode);
+		RzFloat *term2 = rz_float_div(tmp_result, lower_pown, mode);
+		RzFloat *term_plus = rz_float_add(term1, term2, mode);
 
-        rz_float_free(tmp_result);
-        tmp_result = rz_float_div(term_plus, n_float, mode);
+		rz_float_free(tmp_result);
+		tmp_result = rz_float_div(term_plus, n_float, mode);
 
-        // clean local
-        rz_float_free(term1);
-        rz_float_free(term2);
-        rz_float_free(term_plus);
+		// clean local
+		rz_float_free(term1);
+		rz_float_free(term2);
+		rz_float_free(term_plus);
 
-        // clean for next iteration
-        rz_float_free(abs);
-        rz_float_free(eps);
-        rz_float_free(pown);
-        rz_float_free(lower_pown);
-    }
+		// clean for next iteration
+		rz_float_free(abs);
+		rz_float_free(eps);
+		rz_float_free(pown);
+		rz_float_free(lower_pown);
+	}
 
-    rz_bv_free(prev_n);
-    rz_float_free(n_float);
-    rz_float_free(prev_n_float);
-    rz_float_free(target_eps);
-    result = tmp_result;
+	rz_bv_free(prev_n);
+	rz_float_free(n_float);
+	rz_float_free(prev_n_float);
+	rz_float_free(target_eps);
+	result = tmp_result;
 
-    return result;
+	return result;
 }
 
 /** \} */ // end rz_float_arithmetic_group
